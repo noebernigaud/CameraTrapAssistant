@@ -1,0 +1,12 @@
+torchvision
+ultralytics
+yolov5
+timm
+pandas
+numpy
+opencv-python
+pillow
+dill
+hachoir
+tkintermapview
+geopy
