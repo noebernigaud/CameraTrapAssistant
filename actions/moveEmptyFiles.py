@@ -7,7 +7,7 @@ def moveEmptyVideos(folder, filenames, predicted_classes):
     empty_folder = os.path.join(folder, "empty")
     os.makedirs(empty_folder, exist_ok=True)
     for fname, pred in zip(filenames, predicted_classes):
-        if str(pred).strip().lower() == "vide":
+        if str(pred).strip().lower() == "empty":
             try:
                 dest = os.path.join(empty_folder, os.path.basename(fname))
                 if not os.path.exists(dest):
@@ -21,7 +21,8 @@ def moveUndefinedVideos(folder, filenames, predicted_classes):
     undefined_folder = os.path.join(folder, "undefined")
     os.makedirs(undefined_folder, exist_ok=True)
     for fname, pred in zip(filenames, predicted_classes):
-        if str(pred).strip().lower() == "indéfini":
+        logging.info(f"predicted {str(pred).strip().lower()}")
+        if str(pred).strip().lower() == "undefined":
             try:
                 dest = os.path.join(undefined_folder, os.path.basename(fname))
                 if not os.path.exists(dest):

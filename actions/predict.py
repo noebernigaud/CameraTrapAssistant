@@ -1,10 +1,8 @@
 import logging
-import sys
 from logging.handlers import QueueListener
 from multiprocessing import Manager
 from concurrent.futures import ProcessPoolExecutor
 import os
-import sys
 
 def _predict_videos_worker(filenames, threshold, LANG, log_queue):
     """
@@ -47,7 +45,7 @@ def _predict_videos_worker(filenames, threshold, LANG, log_queue):
         "dates": dates,
     }
 
-def predict_videos(filenames, LANG="fr", threshold=0.8):
+def predict_videos(filenames, LANG="en", threshold=0.8):
     logging.info("Lauching predictor subprocess...")
     manager = Manager()
     log_queue = manager.Queue()
