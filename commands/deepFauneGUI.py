@@ -33,8 +33,10 @@ def select_folder():
     folder = filedialog.askdirectory()
     if folder:
         label.config(text=f"{folder}")
+        run_btn.config(state=tk.NORMAL)
 
 def run():
+    run_btn.config(state=tk.DISABLED)
     log_text.config(state='normal')
     log_text.delete(1.0, tk.END)
     log_text.config(state='disabled')
@@ -97,13 +99,20 @@ def main():
         anchor="e"
     )
     folder_btn = tk.Button(folder_frame, text=" Choose Folder ", image=folder_icon, compound=tk.LEFT, font=("Arial", 10, "bold"), command=select_folder)
-    run_btn = tk.Button(folder_frame, text="   Run   ", image=run_icon, compound=tk.LEFT, font=("Arial", 10, "bold"), command=run)
+    global run_btn
+    run_btn = tk.Button(folder_frame, text="   Run   ", image=run_icon, compound=tk.LEFT, font=("Arial", 10, "bold"), command=run, state=tk.DISABLED)
     label.grid(row=0, column=0, sticky="nsew", padx=(0, 5), pady=2, ipadx=10, ipady=0)
     folder_btn.grid(row=0, column=1, padx=(3, 5), pady=2, ipadx=8, ipady=4, sticky="e")
     run_btn.grid(row=0, column=2, padx=5, pady=2, ipadx=8, ipady=4, sticky="e")
     folder_frame.pack(pady=12, padx=10, fill="x", anchor="ne")
     folder_frame.folder_icon = folder_icon
     folder_frame.run_icon = run_icon
+
+    # Options category title and separator
+    options_title = tk.Label(root, text="Options", font=("Arial", 10, "bold"), anchor="w")
+    options_title.pack(fill="x", padx=12, pady=(0, 0))
+    options_separator = tk.Frame(root, height=1, bg="#cccccc", bd=0, relief=tk.FLAT)
+    options_separator.pack(fill="x", padx=12, pady=(0, 8))
 
     # Load saved checkbox state
     do_data_default, do_move_empty_default, do_move_undefined_default, do_rename_default, do_gps_default = load_checkbox_state()
@@ -130,9 +139,15 @@ def main():
     # Map selection variable (no button/field, but still needed for map window)
     coord_var = tk.StringVar(value="No coordinates selected")
 
+    # Logs category title and separator
+    logs_title = tk.Label(root, text="Logs", font=("Arial", 10, "bold"), anchor="w")
+    logs_title.pack(fill="x", padx=12, pady=(0, 0))
+    logs_separator = tk.Frame(root, height=1, bg="#cccccc", bd=0, relief=tk.FLAT)
+    logs_separator.pack(fill="x", padx=12, pady=(0, 8))
+
     # Log text area
     log_text = tk.Text(root, height=10, width=60, state='disabled')
-    log_text.pack(padx=10, pady=10, fill='both', expand=True)
+    log_text.pack(padx=10, pady=(0, 10), fill='both', expand=True)
 
     # Attach the logging handler
     handler = TkinterLogHandler(log_text)
