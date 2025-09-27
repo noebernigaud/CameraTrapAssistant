@@ -74,15 +74,27 @@ def main():
     root.title("DeepFaune custom script")
     root.minsize(240, 120)
 
-    # Folder selection
+    # Folder selection and launch row - visually distinct
     folder_frame = tk.Frame(root)
-    label = tk.Label(folder_frame, text="No folder chosen")
-    folder_btn = tk.Button(folder_frame, text="Choose a folder", command=select_folder)
-    run_btn = tk.Button(folder_frame, text="Run", command=run)
-    label.pack(side=tk.LEFT, padx=5)
-    folder_btn.pack(side=tk.LEFT, padx = 5)
-    run_btn.pack(side=tk.LEFT, padx = 5)
-    folder_frame.pack(pady=5)
+    try:
+        from pathlib import Path
+        folder_icon = tk.PhotoImage(file=str(Path(__file__).parent.parent / "icons" / "folder.png"))
+        run_icon = tk.PhotoImage(file=str(Path(__file__).parent.parent / "icons" / "run.png"))
+        folder_icon = folder_icon.subsample(max(folder_icon.width() // 20, 1), max(folder_icon.height() // 20, 1))
+        run_icon = run_icon.subsample(max(run_icon.width() // 20, 1), max(run_icon.height() // 20, 1))
+    except Exception:
+        folder_icon = None
+        run_icon = None
+    label = tk.Label(folder_frame, text="No folder chosen", font=("Arial", 10, "italic"))
+    folder_btn = tk.Button(folder_frame, text=" Choose Folder ", image=folder_icon, compound=tk.LEFT, font=("Arial", 10, "bold"), command=select_folder)
+    run_btn = tk.Button(folder_frame, text="  Run  ", image=run_icon, compound=tk.LEFT, font=("Arial", 10, "bold"), command=run)
+    # Pack all widgets to the right
+    run_btn.pack(side=tk.RIGHT, padx=5, ipadx=8, ipady=4)
+    folder_btn.pack(side=tk.RIGHT, padx=5, ipadx=8, ipady=4)
+    label.pack(side=tk.RIGHT, padx=10, ipadx=10, ipady=4)
+    folder_frame.pack(pady=12, padx=8, fill="x", anchor="ne")
+    folder_frame.folder_icon = folder_icon
+    folder_frame.run_icon = run_icon
 
     # Load saved checkbox state
     do_data_default, do_move_empty_default, do_move_undefined_default, do_rename_default, do_gps_default = load_checkbox_state()
