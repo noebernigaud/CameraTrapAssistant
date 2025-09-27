@@ -31,6 +31,7 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL license and that you accept its terms.
 
+import logging
 import cv2
 import torch
 import numpy as np
@@ -62,7 +63,7 @@ class PredictorBase(ABC):
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         if device in ["cpu", "cuda"]:
             self.device = torch.device(device)
-        print(f"Use device: {self.device}")
+        logging.info(f"Use device: {self.device}")
         self.LANG = LANG
         self.BATCH_SIZE = BATCH_SIZE
         self.fileManager = FileManager(filenames)

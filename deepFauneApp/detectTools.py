@@ -31,6 +31,7 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL license and that you accept its terms.
 
+import logging
 import os
 import cv2
 import numpy as np
@@ -144,7 +145,7 @@ class MDRedwood:
 ####################################################################################
 class Detector:
     def __init__(self, name=DFYOLO_NAME, device=None):
-        print(f"Using {name} for detection")
+        logging.info(f"Using {name} for detection")
         self.device = device
         if name not in [DFYOLO_NAME, MDSYOLO_NAME, DFYOLO_NAME+"bs"+MDSYOLO_NAME, DFYOLO_NAME+MDSYOLO_NAME,
                         MDRYOLO_NAME]:
