@@ -32,7 +32,7 @@ def select_folder():
     global folder
     folder = filedialog.askdirectory()
     if folder:
-        label.config(text=f"Chosen folder : {folder}")
+        label.config(text=f"{folder}")
 
 def run():
     log_text.config(state='normal')
@@ -74,7 +74,7 @@ def main():
     root.title("DeepFaune custom script")
     root.minsize(240, 120)
 
-    # Folder selection and launch row - visually distinct
+    # Folder selection and launch row
     folder_frame = tk.Frame(root)
     try:
         from pathlib import Path
@@ -85,14 +85,23 @@ def main():
     except Exception:
         folder_icon = None
         run_icon = None
-    label = tk.Label(folder_frame, text="No folder chosen", font=("Arial", 10, "italic"))
+    # Use grid for better expansion and height control
+    folder_frame.columnconfigure(0, weight=1)
+    label = tk.Label(
+        folder_frame,
+        text="No folder chosen...",
+        font=("Arial", 10, "italic"),
+        bg="white",
+        bd=1,
+        relief=tk.SUNKEN,
+        anchor="e"
+    )
     folder_btn = tk.Button(folder_frame, text=" Choose Folder ", image=folder_icon, compound=tk.LEFT, font=("Arial", 10, "bold"), command=select_folder)
     run_btn = tk.Button(folder_frame, text="  Run  ", image=run_icon, compound=tk.LEFT, font=("Arial", 10, "bold"), command=run)
-    # Pack all widgets to the right
-    run_btn.pack(side=tk.RIGHT, padx=5, ipadx=8, ipady=4)
-    folder_btn.pack(side=tk.RIGHT, padx=5, ipadx=8, ipady=4)
-    label.pack(side=tk.RIGHT, padx=10, ipadx=10, ipady=4)
-    folder_frame.pack(pady=12, padx=8, fill="x", anchor="ne")
+    label.grid(row=0, column=0, sticky="nsew", padx=(0, 0), pady=2, ipadx=10, ipady=0)
+    folder_btn.grid(row=0, column=1, padx=(3, 5), pady=2, ipadx=8, ipady=4, sticky="e")
+    run_btn.grid(row=0, column=2, padx=5, pady=2, ipadx=8, ipady=4, sticky="e")
+    folder_frame.pack(pady=12, padx=10, fill="x", anchor="ne")
     folder_frame.folder_icon = folder_icon
     folder_frame.run_icon = run_icon
 
