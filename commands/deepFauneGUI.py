@@ -97,8 +97,8 @@ def main():
         anchor="e"
     )
     folder_btn = tk.Button(folder_frame, text=" Choose Folder ", image=folder_icon, compound=tk.LEFT, font=("Arial", 10, "bold"), command=select_folder)
-    run_btn = tk.Button(folder_frame, text="  Run  ", image=run_icon, compound=tk.LEFT, font=("Arial", 10, "bold"), command=run)
-    label.grid(row=0, column=0, sticky="nsew", padx=(0, 0), pady=2, ipadx=10, ipady=0)
+    run_btn = tk.Button(folder_frame, text="   Run   ", image=run_icon, compound=tk.LEFT, font=("Arial", 10, "bold"), command=run)
+    label.grid(row=0, column=0, sticky="nsew", padx=(0, 5), pady=2, ipadx=10, ipady=0)
     folder_btn.grid(row=0, column=1, padx=(3, 5), pady=2, ipadx=8, ipady=4, sticky="e")
     run_btn.grid(row=0, column=2, padx=5, pady=2, ipadx=8, ipady=4, sticky="e")
     folder_frame.pack(pady=12, padx=10, fill="x", anchor="ne")
