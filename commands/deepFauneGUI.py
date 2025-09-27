@@ -25,40 +25,43 @@ def run_in_thread(folder, do_data, do_move_empty, do_move_undefined, do_rename, 
         messagebox.showerror("Error", f"Execution failure : {e}")
 
 
-
 def select_folder():
     """
     Handler for folder selection. Launches processing in a thread and saves checkbox state.
     """
+    global folder
     folder = filedialog.askdirectory()
     if folder:
         label.config(text=f"Chosen folder : {folder}")
-        log_text.config(state='normal')
-        log_text.delete(1.0, tk.END)
-        log_text.config(state='disabled')
-        do_data = data_var.get()
-        do_move_empty = move_empty_var.get()
-        do_move_undefined = move_undefined_var.get()
-        do_rename = rename_var.get()
-        do_gps = gps_var.get()
-        save_checkbox_state(do_data, do_move_empty, do_move_undefined, do_rename, do_gps)
-        lat, lon = None, None
-        if do_gps:
-            # Open map window automatically to select coordinates and wait for user
-            from GUI_utils.gui_map import open_map_window, load_map_state
-            # Create a modal Toplevel window for the map
-            map_window = open_map_window(root, coord_var)
-            if map_window is not None:
-                map_window.grab_set()
-                root.wait_window(map_window)
-            lat, lon, _ = load_map_state()
-            if lat is None or lon is None:
-                messagebox.showerror("Error", "Please select coordinates on the map before adding GPS data.")
-                return
-            # Only start thread after coordinates are set
-            threading.Thread(target=run_in_thread, args=(folder, do_data, do_move_empty, do_move_undefined, do_rename, do_gps, lat, lon), daemon=True).start()
-        else:
-            threading.Thread(target=run_in_thread, args=(folder, do_data, do_move_empty, do_move_undefined, do_rename, do_gps, lat, lon), daemon=True).start()
+
+def run():
+    log_text.config(state='normal')
+    log_text.delete(1.0, tk.END)
+    log_text.config(state='disabled')
+    do_data = data_var.get()
+    do_move_empty = move_empty_var.get()
+    do_move_undefined = move_undefined_var.get()
+    do_rename = rename_var.get()
+    do_gps = gps_var.get()
+    save_checkbox_state(do_data, do_move_empty, do_move_undefined, do_rename, do_gps)
+    lat, lon = None, None
+    logging.info(f"run on folder {folder}")
+    if do_gps:
+        # Open map window automatically to select coordinates and wait for user
+        from GUI_utils.gui_map import open_map_window, load_map_state
+        # Create a modal Toplevel window for the map
+        map_window = open_map_window(root, coord_var)
+        if map_window is not None:
+            map_window.grab_set()
+            root.wait_window(map_window)
+        lat, lon, _ = load_map_state()
+        if lat is None or lon is None:
+            messagebox.showerror("Error", "Please select coordinates on the map before adding GPS data.")
+            return
+        # Only start thread after coordinates are set
+        threading.Thread(target=run_in_thread, args=(folder, do_data, do_move_empty, do_move_undefined, do_rename, do_gps, lat, lon), daemon=True).start()
+    else:
+        threading.Thread(target=run_in_thread, args=(folder, do_data, do_move_empty, do_move_undefined, do_rename, do_gps, lat, lon), daemon=True).start()
 
 
 def main():
@@ -66,7 +69,7 @@ def main():
     Main entry point for the DeepFaune GUI.
     Sets up the window, widgets, and logging.
     """
-    global root, label, log_text, data_var, move_empty_var, move_undefined_var, rename_var, gps_var, coord_var
+    global root, folder, label, log_text, data_var, move_empty_var, move_undefined_var, rename_var, gps_var, coord_var
     root = tk.Tk()
     root.title("DeepFaune custom script")
     root.minsize(240, 120)
@@ -74,9 +77,11 @@ def main():
     # Folder selection
     folder_frame = tk.Frame(root)
     label = tk.Label(folder_frame, text="No folder chosen")
-    btn = tk.Button(folder_frame, text="Choose a folder", command=select_folder)
+    folder_btn = tk.Button(folder_frame, text="Choose a folder", command=select_folder)
+    run_btn = tk.Button(folder_frame, text="Run", command=run)
     label.pack(side=tk.LEFT, padx=5)
-    btn.pack(side=tk.LEFT, padx = 5)
+    folder_btn.pack(side=tk.LEFT, padx = 5)
+    run_btn.pack(side=tk.LEFT, padx = 5)
     folder_frame.pack(pady=5)
 
     # Load saved checkbox state
