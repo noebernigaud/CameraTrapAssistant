@@ -8,18 +8,19 @@ import logging
 
 # Import project utilities
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from objects.options_config import OptionsConfig
 from actions.run import runWithArgs
 from GUI_utils.gui_logging import TkinterLogHandler
 from GUI_utils.gui_config import load_checkbox_state, save_checkbox_state
 
 
 
-def run_in_thread(folder, do_data, do_move_empty, do_move_undefined, do_rename, do_gps, lat, lon):
+def run_in_thread(folder, options_config, lat, lon):
     """
     Run the main processing in a background thread.
     """
     try:
-        runWithArgs(folder, do_data, do_move_empty, do_move_undefined, do_rename, do_gps, lat, lon)
+        runWithArgs(folder, options_config, lat, lon)
         messagebox.showinfo("Success", "Execution successful.")
     except Exception as e:
         messagebox.showerror("Error", f"Execution failure : {e}")
@@ -40,15 +41,21 @@ def run():
     log_text.config(state='normal')
     log_text.delete(1.0, tk.END)
     log_text.config(state='disabled')
-    do_data = data_var.get()
-    do_move_empty = move_empty_var.get()
-    do_move_undefined = move_undefined_var.get()
-    do_rename = rename_var.get()
-    do_gps = gps_var.get()
-    save_checkbox_state(do_data, do_move_empty, do_move_undefined, do_rename, do_gps)
+    options_config = OptionsConfig(
+        generate_data = data_var.get(),
+        generate_stats = stats_var.get(),
+        move_empty = move_empty_var.get(),
+        move_undefined = move_undefined_var.get(),
+        rename_files = rename_var.get(),
+        add_gps = gps_var.get(),
+        prediction_threshold = threshold_var.get(),
+        get_gps_from_each_file = get_gps_each_var.get(),
+        use_gps_only_for_data = use_gps_only_for_data_var.get()
+    )
+    save_checkbox_state(options_config)
     lat, lon = None, None
     logging.info(f"run on folder {folder}")
-    if do_gps:
+    if options_config.add_gps:
         # Open map window automatically to select coordinates and wait for user
         from GUI_utils.gui_map import open_map_window, load_map_state
         # Create a modal Toplevel window for the map
@@ -61,9 +68,9 @@ def run():
             messagebox.showerror("Error", "Please select coordinates on the map before adding GPS data.")
             return
         # Only start thread after coordinates are set
-        threading.Thread(target=run_in_thread, args=(folder, do_data, do_move_empty, do_move_undefined, do_rename, do_gps, lat, lon), daemon=True).start()
+        threading.Thread(target=run_in_thread, args=(folder, options_config, lat, lon), daemon=True).start()
     else:
-        threading.Thread(target=run_in_thread, args=(folder, do_data, do_move_empty, do_move_undefined, do_rename, do_gps, lat, lon), daemon=True).start()
+        threading.Thread(target=run_in_thread, args=(folder, options_config, lat, lon), daemon=True).start()
 
 
 def main():
@@ -71,7 +78,9 @@ def main():
     Main entry point for the DeepFaune GUI.
     Sets up the window, widgets, and logging.
     """
-    global root, folder, label, log_text, data_var, move_empty_var, move_undefined_var, rename_var, gps_var, coord_var
+    global root, folder, label, log_text
+    global data_var, stats_var, move_empty_var, move_undefined_var, rename_var, get_gps_each_var, use_gps_only_for_data_var, threshold_var
+    global gps_var, coord_var
     root = tk.Tk()
     root.title("DeepFaune custom script")
     root.minsize(240, 120)
@@ -115,26 +124,69 @@ def main():
     options_separator.pack(fill="x", padx=12, pady=(0, 8))
 
     # Load saved checkbox state
-    do_data_default, do_move_empty_default, do_move_undefined_default, do_rename_default, do_gps_default = load_checkbox_state()
+    options_config = load_checkbox_state()
 
-    # Checkboxes
+    # --- Redesigned Options Section ---
+    # Variables
+    data_var = tk.BooleanVar(value=options_config.generate_data)
+    stats_var = tk.BooleanVar(value=options_config.generate_stats)
+    move_empty_var = tk.BooleanVar(value=options_config.move_empty)
+    move_undefined_var = tk.BooleanVar(value=options_config.move_undefined)
+    rename_var = tk.BooleanVar(value=options_config.rename_files)
+    gps_var = tk.BooleanVar(value=options_config.add_gps)
+    get_gps_each_var = tk.BooleanVar(value=options_config.get_gps_from_each_file)
+    use_gps_only_for_data_var = tk.BooleanVar(value=options_config.use_gps_only_for_data)
+    threshold_var = tk.DoubleVar(value=options_config.prediction_threshold)
+
+    # Main options frame
     options_frame = tk.Frame(root)
-    data_var = tk.BooleanVar(value=do_data_default)
-    move_empty_var = tk.BooleanVar(value=do_move_empty_default)
-    move_undefined_var = tk.BooleanVar(value=do_move_undefined_default)  # Default to False for undefined
-    rename_var = tk.BooleanVar(value=do_rename_default)  # Default to False for renaming
-    gps_var = tk.BooleanVar(value=do_gps_default)
-    data_cb = tk.Checkbutton(options_frame, text="Generate data (CSV)", variable=data_var)
-    move_empty_cb = tk.Checkbutton(options_frame, text="Move empty videos to subfolder", variable=move_empty_var)
-    move_undefined_cb = tk.Checkbutton(options_frame, text="Move non-identified videos to subfolder", variable=move_undefined_var)
-    rename_cb = tk.Checkbutton(options_frame, text="Rename files with date and info", variable=rename_var)
-    gps_cb = tk.Checkbutton(options_frame, text="Add GPS data to vidéos", variable=gps_var)
-    data_cb.pack(side=tk.LEFT, padx=5)
-    move_empty_cb.pack(side=tk.LEFT, padx=5)
-    move_undefined_cb.pack(side=tk.LEFT, padx=5)
-    rename_cb.pack(side=tk.LEFT, padx=5)
-    gps_cb.pack(side=tk.LEFT, padx=5)
-    options_frame.pack(pady=5)
+    options_frame.pack(pady=5, fill="x")
+
+    # Folder sort row
+    folder_sort_frame = tk.Frame(options_frame)
+    tk.Label(folder_sort_frame, text="Folder sort :", width=32, anchor="w").pack(side=tk.LEFT)
+    tk.Checkbutton(folder_sort_frame, text="Empty results to subfolder", width=32, anchor="w", variable=move_empty_var).pack(side=tk.LEFT)
+    tk.Checkbutton(folder_sort_frame, text="Undefined results to subfolder", width=32, anchor="w", variable=move_undefined_var).pack(side=tk.LEFT)
+    folder_sort_frame.pack(fill="x", pady=1, padx=30)
+
+    # Files update row
+    files_update_frame = tk.Frame(options_frame)
+    tk.Label(files_update_frame, text="Files update :", width=32, anchor="w").pack(side=tk.LEFT)
+    tk.Checkbutton(files_update_frame, text="Rename with date and info", width=32, anchor="w", variable=rename_var).pack(side=tk.LEFT)
+    tk.Checkbutton(files_update_frame, text="Add GPS location", width=32, anchor="w", variable=gps_var).pack(side=tk.LEFT)
+    files_update_frame.pack(fill="x", pady=1, padx=30)
+
+    # Data generation row
+    data_gen_frame = tk.Frame(options_frame)
+    tk.Label(data_gen_frame, text="Data generation :", width=32, anchor="w").pack(side=tk.LEFT)
+    tk.Checkbutton(data_gen_frame, text="CSV file", width=32, anchor="w", variable=data_var).pack(side=tk.LEFT)
+    tk.Checkbutton(data_gen_frame, text="Statistics files", width=32, anchor="w", variable=stats_var).pack(side=tk.LEFT)
+    data_gen_frame.pack(fill="x", pady=1, padx=30)
+
+    # --- More (foldable) section ---
+    def toggle_more():
+        if more_content.winfo_ismapped():
+            more_content.pack_forget()
+            more_btn.config(text="more ▼")
+        else:
+            more_content.pack(fill="x", pady=(2, 0))
+            more_btn.config(text="more ▲")
+
+    more_btn = tk.Button(options_frame, text="more ▼", font=("Arial", 10, "italic"), bd=0, fg="#444", cursor="hand2", command=toggle_more)
+    more_btn.pack(anchor="w", pady=(6, 0), padx=20)
+
+    more_content = tk.Frame(options_frame)
+    # Prediction threshold slider
+    threshold_row = tk.Frame(more_content)
+    tk.Label(threshold_row, text="Adjust prediction threshold :", width=26, anchor="w").pack(side=tk.LEFT)
+    threshold_slider = tk.Scale(threshold_row, from_=0.0, to=1.0, orient=tk.HORIZONTAL, resolution=0.01, variable=threshold_var, showvalue=True, length=180)
+    threshold_slider.pack(side=tk.LEFT, padx=5)
+    threshold_row.pack(fill="x", pady=2, padx=30)
+    # More checkboxes
+    tk.Checkbutton(more_content, text="Get GPS data for each video independently", variable=get_gps_each_var).pack(anchor="w", padx=30)
+    tk.Checkbutton(more_content, text="Use added GPS data without updating files", variable=use_gps_only_for_data_var).pack(anchor="w", padx=30)
+    # Start folded
+    more_content.pack_forget()
 
     # Map selection variable (no button/field, but still needed for map window)
     coord_var = tk.StringVar(value="No coordinates selected")

@@ -1,6 +1,11 @@
 import os
 import configparser
 import logging
+import sys
+
+# Import project utilities
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from objects.options_config import OptionsConfig
 
 def get_config_file_path():
     """
@@ -10,26 +15,38 @@ def get_config_file_path():
 
 def load_checkbox_state():
     """
-    Loads the checkbox state from the config file. Returns (do_data, do_move, do_gps) as booleans.
+    Loads the checkbox state from the config file. Returns an OptionsConfig containing booleans for each option.
     """
     config = configparser.ConfigParser()
     config_file = get_config_file_path()
     if os.path.exists(config_file):
         config.read(config_file)
-        do_data = config.getboolean('options', 'generate_data', fallback=True)
-        do_move_empty = config.getboolean('options', 'move_empty', fallback=True)
-        do_move_undefined = config.getboolean('options', 'move_undefined', fallback=True)
-        do_rename = config.getboolean('options', 'rename_files', fallback=True)
-        do_gps = config.getboolean('options', 'add_gps', fallback=False)
+        state = OptionsConfig(
+            generate_data = config.getboolean('options', 'generate_data', fallback=True),
+            generate_stats = config.getboolean('options', 'generate_stats', fallback=True),
+            move_empty = config.getboolean('options', 'move_empty', fallback=True),
+            move_undefined = config.getboolean('options', 'move_undefined', fallback=True),
+            rename_files = config.getboolean('options', 'rename_files', fallback=True),
+            add_gps = config.getboolean('options', 'add_gps', fallback=True),
+            prediction_threshold = config.getfloat('options', 'prediction_threshold', fallback=0.8),
+            get_gps_from_each_file = config.getboolean('options', 'get_gps_from_each_file', fallback=False),
+            use_gps_only_for_data = config.getboolean('options', 'use_gps_only_for_data', fallback=False)
+        )
     else:
-        do_data = True
-        do_move_empty = True
-        do_move_undefined = True
-        do_rename = True
-        do_gps = False
-    return do_data, do_move_empty, do_move_undefined, do_rename, do_gps
+        state = OptionsConfig(
+            generate_data = True,
+            generate_stats = True,
+            move_empty = True,
+            move_undefined = True,
+            rename_files = True,
+            add_gps = False,
+            prediction_threshold = 0.8,
+            get_gps_from_each_file = False,
+            use_gps_only_for_data = False
+        )
+    return state
 
-def save_checkbox_state(do_data, do_move_empty, do_move_undefined, do_rename, do_gps):
+def save_checkbox_state(newOptionsConfig: OptionsConfig):
     """
     Saves the checkbox state to the config file, preserving other sections. Now also saves GPS add checkbox.
     """
@@ -39,11 +56,15 @@ def save_checkbox_state(do_data, do_move_empty, do_move_undefined, do_rename, do
         config.read(config_file)
     if 'options' not in config:
         config['options'] = {}
-    config['options']['generate_data'] = str(do_data)
-    config['options']['move_empty'] = str(do_move_empty)
-    config['options']['move_undefined'] = str(do_move_undefined)  # Save undefined move state
-    config['options']['rename_files'] = str(do_rename)
-    config['options']['add_gps'] = str(do_gps)
+    config['options']['generate_data'] = str(newOptionsConfig.generate_data)
+    config['options']['generate_stats'] = str(newOptionsConfig.generate_stats)
+    config['options']['move_empty'] = str(newOptionsConfig.move_empty)
+    config['options']['move_undefined'] = str(newOptionsConfig.move_undefined)
+    config['options']['rename_files'] = str(newOptionsConfig.rename_files)
+    config['options']['add_gps'] = str(newOptionsConfig.add_gps)
+    config['options']['prediction_threshold'] = str(newOptionsConfig.prediction_threshold)
+    config['options']['get_gps_from_each_file'] = str(newOptionsConfig.get_gps_from_each_file)
+    config['options']['use_gps_only_for_data'] = str(newOptionsConfig.use_gps_only_for_data)
     with open(config_file, 'w') as configfile:
         config.write(configfile)
 
