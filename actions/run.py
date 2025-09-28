@@ -24,12 +24,12 @@ def runWithArgs(folder, options_config: OptionsConfig, lat=None, lon=None):
         )
     
     if options_config.add_gps and lat is not None and lon is not None:
-        gps_coordinates, addresses = add_and_extract_gps(filenames, lat, lon)
+        gps_coordinates, addresses = add_and_extract_gps(filenames, lat, lon, options_config.use_gps_only_for_data)
     else :
-        gps_coordinates, addresses = extract_existing_gps(filenames, True)
+        gps_coordinates, addresses = extract_existing_gps(filenames, options_config.get_gps_from_each_file)
 
     if options_config.rename_files or options_config.generate_data or options_config.move_empty or options_config.move_undefined:
-        prediction_results = predict_videos(filenames)
+        prediction_results = predict_videos(filenames, options_config.prediction_threshold)
     else:
         logging.info("No data generation or moving of empty videos selected, skipping prediction step.")
 

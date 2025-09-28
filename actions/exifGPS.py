@@ -106,13 +106,14 @@ def read_gps(video_path):
         return lat, lon
     return None, None
 
-def add_and_extract_gps(filenames, lat, lon):
-	logging.info("Adding GPS data to videos...")
+def add_and_extract_gps(filenames, lat, lon, skip_gps_exif_overwrite=False):
+	logging.info("Setting GPS data...")
 	address = get_place_name(lat, lon)
-	addGPSToVideos(filenames, lat, lon, address)
+	if not skip_gps_exif_overwrite:
+		addGPSToVideos(filenames, lat, lon, address)
 	return ([(lat, lon) for _ in filenames], [address for _ in filenames])
 
-def extract_existing_gps(filenames, all_gps_are_equal=False):
+def extract_existing_gps(filenames, get_gps_from_each_file=False):
 	"""
 	For each file in filenames, extract GPS coordinates and address info.
 	Uses a cache to avoid duplicate reverse geocoding requests for the same coordinates.
@@ -121,30 +122,37 @@ def extract_existing_gps(filenames, all_gps_are_equal=False):
 	gps_coordinates = []
 	addresses = []
 	coord_to_address = {}
-	if all_gps_are_equal:
+	if not get_gps_from_each_file:
+		logging.info("Extracting GPS from first file only...")
 		lat, lon = read_gps(filenames[0])
 		if lat is None or lon is None:
+			logging.info("No GPS data found in the first file.")
 			return ([(None, None) for _ in filenames], [None for _ in filenames])
 		address = get_place_name(lat, lon)
+		logging.info(f"Extracted GPS from first file: ({lat}, {lon}), address: {getCity(address)}")
 		return ([(lat, lon) for _ in filenames], [address for _ in filenames])
-	for file in filenames:
-		lat, lon = read_gps(file)
-		if lat is None or lon is None:
-			gps_coordinates.append((None, None))
-			addresses.append(None)
-			continue
-		gps_coordinates.append((lat, lon))
-		# Use rounded coordinates for caching
-		lat_r = round(lat, 4)
-		lon_r = round(lon, 4)
-		coord_key = (lat_r, lon_r)
-		if coord_key in coord_to_address:
-			address = coord_to_address[coord_key]
-		else:
-			address = get_place_name(lat, lon)
-			coord_to_address[coord_key] = address
-		addresses.append(address)
-	return (gps_coordinates, addresses)
+	else:
+		logging.info("Extracting GPS from each file...")
+		for file in filenames:
+			lat, lon = read_gps(file)
+			if lat is None or lon is None:
+				logging.info(f"No GPS data found in file: {file}")
+				gps_coordinates.append((None, None))
+				addresses.append(None)
+				continue
+			gps_coordinates.append((lat, lon))
+			# Use rounded coordinates for caching
+			lat_r = round(lat, 4)
+			lon_r = round(lon, 4)
+			coord_key = (lat_r, lon_r)
+			if coord_key in coord_to_address:
+				address = coord_to_address[coord_key]
+			else:
+				address = get_place_name(lat, lon)
+				coord_to_address[coord_key] = address
+				logging.info(f"Extracted GPS from file {file}: ({lat}, {lon}), address: {getCity(address)}")
+			addresses.append(address)
+		return (gps_coordinates, addresses)
 
 def extract_gps_from_file(filename):
 	lat, lon = read_gps(filename)

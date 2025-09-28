@@ -45,7 +45,7 @@ def _predict_videos_worker(filenames, threshold, LANG, log_queue):
         "dates": dates,
     }
 
-def predict_videos(filenames, LANG="en", threshold=0.8):
+def predict_videos(filenames, threshold=0.8, LANG="en"):
     logging.info("Lauching predictor subprocess...")
     manager = Manager()
     log_queue = manager.Queue()
