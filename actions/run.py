@@ -6,6 +6,7 @@ from pathlib import Path
 from actions.exifGPS import add_and_extract_gps, extract_existing_gps, getCity
 from actions.moveEmptyFiles import moveEmptyVideos, moveUndefinedVideos
 from actions.generateResultsCSV import generatePredictorResultsAsCSV
+from actions.generateStatsPDF import generateStatsPDF
 from actions.predict import predict_videos
 from actions.renameFiles import rename_videos_with_date_and_info
 
@@ -28,7 +29,7 @@ def runWithArgs(folder, options_config: OptionsConfig, lat=None, lon=None):
     else :
         gps_coordinates, addresses = extract_existing_gps(filenames, options_config.get_gps_from_each_file)
 
-    if options_config.rename_files or options_config.generate_data or options_config.move_empty or options_config.move_undefined:
+    if options_config.rename_files or options_config.generate_data or options_config.generate_stats or options_config.move_empty or options_config.move_undefined:
         prediction_results = predict_videos(filenames, options_config.prediction_threshold)
     else:
         logging.info("No data generation or moving of empty videos selected, skipping prediction step.")
@@ -38,6 +39,9 @@ def runWithArgs(folder, options_config: OptionsConfig, lat=None, lon=None):
 
     if options_config.generate_data:
         generatePredictorResultsAsCSV(folder, filenames, prediction_results, gps_coordinates, [getCity(address) for address in addresses])
+
+    if options_config.generate_stats:
+        generateStatsPDF(folder, filenames, prediction_results, addresses)
 
     if options_config.move_empty:
         moveEmptyVideos(folder, filenames, prediction_results["predictions"])

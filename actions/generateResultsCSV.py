@@ -7,12 +7,14 @@ def generatePredictorResultsAsCSV(folder, filenames, predictions_results, gps_co
     predictedclass = predictions_results["predictions"]
     predictedscore = predictions_results["scores"]
     dates = predictions_results["dates"]
+    counts = predictions_results["counts"]
     preddf = pd.DataFrame({
         'filename':filenames, 
         'dates':dates, 
         'city':addresses,
         'gps':gps_coordinates,
         'prediction':predictedclass, 
+        'counts':counts,
         'score':predictedscore
     })
     # Create 'data' folder inside VIDEOPATH if it doesn't exist

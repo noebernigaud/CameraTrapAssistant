@@ -36,13 +36,14 @@ def _predict_videos_worker(filenames, threshold, LANG, log_queue):
 
     logging.info("Predictions completed")
 
-    predictions, scores, _, _ = predictor.getPredictions()
+    predictions, scores, _, counts = predictor.getPredictions()
     dates = predictor.getDates()
 
     return {
         "predictions": predictions,
         "scores": scores,
         "dates": dates,
+        "counts": counts
     }
 
 def predict_videos(filenames, threshold=0.8, LANG="en"):

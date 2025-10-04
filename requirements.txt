@@ -10,3 +10,4 @@ dill
 hachoir
 tkintermapview
 geopy
+reportlab

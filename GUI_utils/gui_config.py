@@ -28,7 +28,7 @@ def load_checkbox_state():
             move_undefined = config.getboolean('options', 'move_undefined', fallback=True),
             rename_files = config.getboolean('options', 'rename_files', fallback=True),
             add_gps = config.getboolean('options', 'add_gps', fallback=True),
-            prediction_threshold = config.getfloat('options', 'prediction_threshold', fallback=0.8),
+            prediction_threshold = config.getfloat('options', 'prediction_threshold', fallback=0.9),
             get_gps_from_each_file = config.getboolean('options', 'get_gps_from_each_file', fallback=False),
             use_gps_only_for_data = config.getboolean('options', 'use_gps_only_for_data', fallback=False)
         )
@@ -40,7 +40,7 @@ def load_checkbox_state():
             move_undefined = True,
             rename_files = True,
             add_gps = False,
-            prediction_threshold = 0.8,
+            prediction_threshold = 0.9,
             get_gps_from_each_file = False,
             use_gps_only_for_data = False
         )
