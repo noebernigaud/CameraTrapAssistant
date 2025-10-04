@@ -14,7 +14,7 @@ from actions.renameFiles import rename_videos_with_date_and_info
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from objects.options_config import OptionsConfig
 
-def runWithArgs(folder, options_config: OptionsConfig, lat=None, lon=None):
+def runWithArgs(folder, options_config: OptionsConfig, lat=None, lon=None, csv_path=None):
     ## VIDEOS FILE
     filenames = sorted(
             [str(f) for f in Path(folder).rglob('*.[Aa][Vv][Ii]')] +
@@ -37,11 +37,11 @@ def runWithArgs(folder, options_config: OptionsConfig, lat=None, lon=None):
     if options_config.rename_files:
         rename_videos_with_date_and_info(filenames, prediction_results["predictions"], prediction_results["dates"])
 
-    if options_config.generate_data:
-        generatePredictorResultsAsCSV(folder, filenames, prediction_results, gps_coordinates, [getCity(address) for address in addresses])
-
     if options_config.generate_stats:
-        generateStatsPDF(folder, filenames, prediction_results, addresses)
+        generateStatsPDF(folder, filenames, prediction_results, addresses, csv_path)
+
+    if options_config.generate_data or csv_path:
+        generatePredictorResultsAsCSV(folder, filenames, prediction_results, gps_coordinates, [getCity(address) for address in addresses], options_config.generate_data, csv_path)
 
     if options_config.move_empty:
         moveEmptyVideos(folder, filenames, prediction_results["predictions"])

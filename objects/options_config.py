@@ -11,3 +11,4 @@ class OptionsConfig:
     prediction_threshold: float
     get_gps_from_each_file: bool
     use_gps_only_for_data: bool
+    combine_with_data: bool

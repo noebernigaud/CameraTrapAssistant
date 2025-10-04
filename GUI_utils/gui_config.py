@@ -30,7 +30,8 @@ def load_checkbox_state():
             add_gps = config.getboolean('options', 'add_gps', fallback=True),
             prediction_threshold = config.getfloat('options', 'prediction_threshold', fallback=0.9),
             get_gps_from_each_file = config.getboolean('options', 'get_gps_from_each_file', fallback=False),
-            use_gps_only_for_data = config.getboolean('options', 'use_gps_only_for_data', fallback=False)
+            use_gps_only_for_data = config.getboolean('options', 'use_gps_only_for_data', fallback=False),
+            combine_with_data= config.getboolean('options', 'combine_with_data', fallback=False)
         )
     else:
         state = OptionsConfig(
@@ -42,7 +43,8 @@ def load_checkbox_state():
             add_gps = False,
             prediction_threshold = 0.9,
             get_gps_from_each_file = False,
-            use_gps_only_for_data = False
+            use_gps_only_for_data = False,
+            combine_with_data= False
         )
     return state
 
@@ -65,6 +67,7 @@ def save_checkbox_state(newOptionsConfig: OptionsConfig):
     config['options']['prediction_threshold'] = str(newOptionsConfig.prediction_threshold)
     config['options']['get_gps_from_each_file'] = str(newOptionsConfig.get_gps_from_each_file)
     config['options']['use_gps_only_for_data'] = str(newOptionsConfig.use_gps_only_for_data)
+    config['options']['combine_with_data'] = str(newOptionsConfig.combine_with_data)
     with open(config_file, 'w') as configfile:
         config.write(configfile)
 

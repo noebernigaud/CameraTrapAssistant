@@ -15,12 +15,12 @@ from GUI_utils.gui_config import load_checkbox_state, save_checkbox_state
 
 
 
-def run_in_thread(folder, options_config, lat, lon):
+def run_in_thread(folder, options_config, lat, lon, csv_path=None):
     """
     Run the main processing in a background thread.
     """
     try:
-        runWithArgs(folder, options_config, lat, lon)
+        runWithArgs(folder, options_config, lat, lon, csv_path)
         messagebox.showinfo("Success", "Execution successful.")
     except Exception as e:
         messagebox.showerror("Error", f"Execution failure : {e}")
@@ -50,11 +50,22 @@ def run():
         add_gps = gps_var.get(),
         prediction_threshold = threshold_var.get(),
         get_gps_from_each_file = get_gps_each_var.get(),
-        use_gps_only_for_data = use_gps_only_for_data_var.get()
+        use_gps_only_for_data = use_gps_only_for_data_var.get(),
+        combine_with_data= combine_with_data_var.get()
     )
     save_checkbox_state(options_config)
     lat, lon = None, None
+    csv_path = None
     logging.info(f"run on folder {folder}")
+    if options_config.combine_with_data:
+        csv_path = filedialog.askopenfilename(
+            title="Select CSV file to combine with",
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")]
+        )
+        if not csv_path:
+            messagebox.showerror("Error", "You must select a CSV file to combine with data.")
+            run_btn.config(state=tk.NORMAL)
+            return
     if options_config.add_gps:
         # Open map window automatically to select coordinates and wait for user
         from GUI_utils.gui_map import open_map_window, load_map_state
@@ -66,11 +77,9 @@ def run():
         lat, lon, _ = load_map_state()
         if lat is None or lon is None:
             messagebox.showerror("Error", "Please select coordinates on the map before adding GPS data.")
+            run_btn.config(state=tk.NORMAL)
             return
-        # Only start thread after coordinates are set
-        threading.Thread(target=run_in_thread, args=(folder, options_config, lat, lon), daemon=True).start()
-    else:
-        threading.Thread(target=run_in_thread, args=(folder, options_config, lat, lon), daemon=True).start()
+    threading.Thread(target=run_in_thread, args=(folder, options_config, lat, lon, csv_path), daemon=True).start()
 
 
 def main():
@@ -79,7 +88,7 @@ def main():
     Sets up the window, widgets, and logging.
     """
     global root, folder, label, log_text
-    global data_var, stats_var, move_empty_var, move_undefined_var, rename_var, get_gps_each_var, use_gps_only_for_data_var, threshold_var
+    global data_var, stats_var, move_empty_var, move_undefined_var, rename_var, get_gps_each_var, use_gps_only_for_data_var, threshold_var, combine_with_data_var
     global gps_var, coord_var
     root = tk.Tk()
     root.title("DeepFaune custom script")
@@ -136,6 +145,7 @@ def main():
     gps_var = tk.BooleanVar(value=options_config.add_gps)
     get_gps_each_var = tk.BooleanVar(value=options_config.get_gps_from_each_file)
     use_gps_only_for_data_var = tk.BooleanVar(value=options_config.use_gps_only_for_data)
+    combine_with_data_var = tk.BooleanVar(value=options_config.combine_with_data)
     threshold_var = tk.DoubleVar(value=options_config.prediction_threshold)
 
     # Main options frame
@@ -185,6 +195,7 @@ def main():
     # More checkboxes
     tk.Checkbutton(more_content, text="Get GPS data for each video independently", variable=get_gps_each_var).pack(anchor="w", padx=30)
     tk.Checkbutton(more_content, text="Use added GPS data without updating files", variable=use_gps_only_for_data_var).pack(anchor="w", padx=30)
+    tk.Checkbutton(more_content, text="Combine data results with existing CSV", variable=combine_with_data_var).pack(anchor="w", padx=30)
     # Start folded
     more_content.pack_forget()
 

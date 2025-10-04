@@ -7,25 +7,26 @@ import io
 import os
 import matplotlib
 import logging
+import sys
 
 from actions.exifGPS import getCity
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
-# Example usage:
-# generateStatsPDF("output.pdf", folder, filenames, predictions_results, addresses)
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils.retrieveCSVData import retrieveDataFromCSV
 
-### PDF GENERATION TEMPLATE
-# Title: "DeepFaune Results for {start_date} to {end_date}, at {city}"
-# Subtitle: "Analyzed {num_videos} videos: {num_with_animals}({percent_with_animals}%) with animals"
-# Table with columns: Species, Number of Videos, Number of Dates, Date Range, Hours Range
-# Image from matplotlib (graph with days on y-axis, hours on x-axis, points for each detection colored by species)
-def generateStatsPDF(folder, filenames, predictions_results, addresses):
+
+def generateStatsPDF(folder, filenames, predictions_results, addresses, csv_path=None):
     # Extract data
-    logging.info(predictions_results)
     predictedclass = predictions_results["predictions"]
     predictedCount = predictions_results["counts"]
     date_objs: list[datetime.datetime] = predictions_results["dates"]
+
+    # Get existing CSV data if provided
+    existing_csv_predictions = None
+    if csv_path:
+        existing_csv_predictions = retrieveDataFromCSV(csv_path)
 
     # Calculate stats
     num_videos = len(filenames)
