@@ -8,6 +8,7 @@ import os
 import matplotlib
 import logging
 import sys
+import numpy as np
 
 from actions.exifGPS import getCity
 matplotlib.use('agg')
@@ -16,24 +17,7 @@ import matplotlib.pyplot as plt
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils.retrieveCSVData import retrieveDataFromCSV
 
-
-def generateStatsPDF(folder, filenames, predictions_results, addresses, csv_path=None):
-    # Extract data
-    predictedclass = predictions_results["predictions"]
-    predictedCount = predictions_results["counts"]
-    date_objs: list[datetime.datetime] = predictions_results["dates"]
-
-    # Get existing CSV data if provided
-    existing_csv_predictions = None
-    if csv_path:
-        existing_csv_predictions = retrieveDataFromCSV(csv_path)
-
-    # Calculate stats
-    num_videos = len(filenames)
-    num_with_animals = sum(1 for p in predictedclass if p not in ["empty", "undefined", "vehicle"])
-    percent_with_animals = round(100 * num_with_animals / num_videos, 1) if num_videos else 0
-
-    # Dates
+def getDatesRange(date_objs: list[datetime.datetime]):
     if date_objs:
         start_date =  min(date_objs)
         end_date = max(date_objs)
@@ -42,14 +26,48 @@ def generateStatsPDF(folder, filenames, predictions_results, addresses, csv_path
         total_days = (end_date.date() - start_date.date()).days + 1
     else:
         start_date_str = end_date_str = total_days = "N/A"
+    return start_date_str, end_date_str, total_days
 
-    # City/address
-    city = getCity(addresses[0]) if addresses else "Unknown location"
+def getFilesWithVideosProportions(file_number, predictedclass):
+    num_with_animals = sum(1 for p in predictedclass if p not in ["empty", "undefined", "vehicle"])
+    percent_with_animals = round(100 * num_with_animals / file_number, 1) if file_number else 0
+    return num_with_animals, percent_with_animals
 
-    # Table data
-    species_set = set(predictedclass)
-    import numpy as np
+def buildAnimalsTableData(species_set: list[str], predictedclass: list[str], predictedCount: list[int], date_objs: list[datetime.datetime]):
     header = ["Species", "Files", "Days", "Max Count", "Peak Hours", "Hour Variability"]
+    predicted_rows = buildPredictedStatRows(species_set, predictedclass, predictedCount, date_objs)
+    total_row = buildTotalRow(species_set, predicted_rows, predictedclass, date_objs)
+    # Separate out empty/undefined rows
+    empty_row = next((r for r in predicted_rows if r[0] == "empty"), None)
+    undefined_row = next((r for r in predicted_rows if r[0] == "undefined"), None)
+    # Remove them from rows
+    predicted_rows = [r for r in predicted_rows if r[0] not in ("empty", "undefined")]
+    # Sort animal rows by number of files descending
+    animal_rows = sorted([r for r in predicted_rows if r[0] not in ("vehicle",)], key=lambda r: r[1], reverse=True)
+    return format_table_data(header, total_row, empty_row, undefined_row, animal_rows)
+
+def make_paragraph_row(row, style):
+    return [Paragraph(str(cell), style) for cell in row]
+
+def format_table_data(header, total_row, empty_row, undefined_row, animal_rows):
+    from reportlab.lib.styles import ParagraphStyle
+    styles = getSampleStyleSheet()
+    from reportlab.lib.enums import TA_CENTER
+    bold_style = ParagraphStyle('Bold', parent=styles['Normal'], fontName='Helvetica-Bold', alignment=TA_CENTER)
+    italic_style = ParagraphStyle('Italic', parent=styles['Normal'], fontName='Helvetica-Oblique', alignment=TA_CENTER)
+    table_data = [header]
+    table_data.append(make_paragraph_row(total_row, bold_style))
+    if empty_row:
+        empty_row[3] = "N/A"
+        table_data.append(make_paragraph_row(empty_row, italic_style))
+    if undefined_row:
+        undefined_row[3] = "N/A"
+        table_data.append(make_paragraph_row(undefined_row, italic_style))
+    for r in animal_rows:
+        table_data.append([str(cell) for cell in r])
+    return table_data
+
+def buildPredictedStatRows(species_set: list[str], predictedclass: list[str], predictedCount: list[int], date_objs: list[datetime.datetime]):
     rows = []
     for species in sorted(species_set):
         indices = [i for i, s in enumerate(predictedclass) if s == species]
@@ -82,7 +100,6 @@ def generateStatsPDF(folder, filenames, predictions_results, addresses, csv_path
                 mean_angle = np.arctan2(mean_sin, mean_cos)
                 if mean_angle < 0:
                     mean_angle += 2 * np.pi
-                peak_hour = (mean_angle * 24) / (2 * np.pi)
                 R = np.sqrt(mean_sin**2 + mean_cos**2)
                 circ_std = np.sqrt(-2 * np.log(R)) * 24 / (2 * np.pi) if R > 0 else float('nan')
                 sorted_hours = np.sort(hours)
@@ -123,11 +140,12 @@ def generateStatsPDF(folder, filenames, predictions_results, addresses, csv_path
             peak_hours_str,
             hour_var_str
         ])
+    return rows
 
+def buildTotalRow(species_set: list[str], rows: list[any], predictedclass: list[str], date_objs: list[datetime.datetime]):
     # Prepare total row with stats
+    total_days = getDatesRange(date_objs)[2]
     total_files = sum(r[1] for r in rows)
-    
-    # Gather all clustered_obs for total
     all_species_dates = []
     for species in sorted(species_set):
         indices = [i for i, s in enumerate(predictedclass) if s == species]
@@ -150,14 +168,12 @@ def generateStatsPDF(folder, filenames, predictions_results, addresses, csv_path
                 clustered_obs.append(mean_dt)
         hours = [d.hour + d.minute/60.0 for d in clustered_obs]
         if hours:
-            import numpy as np
             hours_rad = np.array(hours) * 2 * np.pi / 24
             mean_sin = np.mean(np.sin(hours_rad))
             mean_cos = np.mean(np.cos(hours_rad))
             mean_angle = np.arctan2(mean_sin, mean_cos)
             if mean_angle < 0:
                 mean_angle += 2 * np.pi
-            peak_hour = (mean_angle * 24) / (2 * np.pi)
             R = np.sqrt(mean_sin**2 + mean_cos**2)
             circ_std = np.sqrt(-2 * np.log(R)) * 24 / (2 * np.pi) if R > 0 else float('nan')
             sorted_hours = np.sort(hours)
@@ -170,7 +186,7 @@ def generateStatsPDF(folder, filenames, predictions_results, addresses, csv_path
                     j = (i + k) % n
                     if j > i:
                         width = sorted_hours[j-1] - sorted_hours[i]
-                    else:
+                    else:  
                         width = (sorted_hours[-1] - sorted_hours[i]) + (sorted_hours[j-1] - sorted_hours[0]) + 24
                     if width < min_width:
                         min_width = width
@@ -187,37 +203,30 @@ def generateStatsPDF(folder, filenames, predictions_results, addresses, csv_path
             total_peak_hours = total_hour_var = "N/A"
     else:
         total_peak_hours = total_hour_var = "N/A"
-    total_row = ["Total", total_files, total_days, "N/A", total_peak_hours, total_hour_var]
+    return ["Total", total_files, total_days, "N/A", total_peak_hours, total_hour_var]
 
-    # Separate out empty/undefined rows
-    empty_row = next((r for r in rows if r[0] == "empty"), None)
-    undefined_row = next((r for r in rows if r[0] == "undefined"), None)
-    # Remove them from rows
-    rows = [r for r in rows if r[0] not in ("empty", "undefined")]
-    # Sort animal rows by number of files descending
-    animal_rows = sorted([r for r in rows if r[0] not in ("vehicle",)], key=lambda r: r[1], reverse=True)
 
-    # Compose table_data
-    # Use Paragraph for formatting
-    from reportlab.lib.styles import ParagraphStyle
-    styles = getSampleStyleSheet()
-    from reportlab.lib.enums import TA_CENTER
-    bold_style = ParagraphStyle('Bold', parent=styles['Normal'], fontName='Helvetica-Bold', alignment=TA_CENTER)
-    italic_style = ParagraphStyle('Italic', parent=styles['Normal'], fontName='Helvetica-Oblique', alignment=TA_CENTER)
+def generateStatsPDF(folder, filenames, predictions_results, addresses, csv_path=None):
+    # Extract data
+    predictedclass = predictions_results["predictions"]
+    predictedCount = predictions_results["counts"]
+    date_objs: list[datetime.datetime] = predictions_results["dates"]
+    species_set = set(predictedclass)
 
-    def make_paragraph_row(row, style):
-        return [Paragraph(str(cell), style) for cell in row]
+    # Get existing CSV data if provided
+    existing_csv_predictions = None
+    if csv_path:
+        existing_csv_predictions = retrieveDataFromCSV(csv_path)  
 
-    table_data = [header]
-    table_data.append(make_paragraph_row(total_row, bold_style))
-    if empty_row:
-        empty_row[3] = "N/A"
-        table_data.append(make_paragraph_row(empty_row, italic_style))
-    if undefined_row:
-        undefined_row[3] = "N/A"
-        table_data.append(make_paragraph_row(undefined_row, italic_style))
-    for r in animal_rows:
-        table_data.append([str(cell) for cell in r])
+    # Calculate stats
+    num_videos = len(filenames)
+    num_with_animals, percent_with_animals = getFilesWithVideosProportions(num_videos, predictedclass)
+
+    # Dates
+    start_date_str, end_date_str, total_days = getDatesRange(date_objs)
+
+    # City/address
+    city = getCity(addresses[0]) if addresses else "Unknown location"
 
     # Matplotlib graph
     # Dynamically set figure height based on number of dates (min 3, max 15 inches)
@@ -257,7 +266,7 @@ def generateStatsPDF(folder, filenames, predictions_results, addresses, csv_path
     elements.append(Spacer(1, 12))
 
     # Table
-    t = Table(table_data, hAlign='LEFT')
+    t = Table(buildAnimalsTableData(species_set, predictedclass, predictedCount, date_objs), hAlign='LEFT')
     t.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
         ('TEXTCOLOR', (0,0), (-1,0), colors.black),
