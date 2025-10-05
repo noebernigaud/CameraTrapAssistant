@@ -42,140 +42,95 @@ def format_table_data(header, total_row, empty_row, undefined_row, animal_rows):
         table_data.append([str(cell) for cell in r])
     return table_data
 
+def cluster_datetimes(datetimes, max_gap_seconds=300):
+    """Cluster datetimes within max_gap_seconds (default 5 min) and return cluster means."""
+    if not datetimes:
+        return []
+    sorted_datetimes = sorted(datetimes)
+    clusters = []
+    current_cluster = [sorted_datetimes[0]]
+    for dt in sorted_datetimes[1:]:
+        if (dt - current_cluster[-1]).total_seconds() <= max_gap_seconds:
+            current_cluster.append(dt)
+        else:
+            mean_dt = current_cluster[0] + (current_cluster[-1] - current_cluster[0]) / 2 if len(current_cluster) > 1 else current_cluster[0]
+            clusters.append(mean_dt)
+            current_cluster = [dt]
+    if current_cluster:
+        mean_dt = current_cluster[0] + (current_cluster[-1] - current_cluster[0]) / 2 if len(current_cluster) > 1 else current_cluster[0]
+        clusters.append(mean_dt)
+    return clusters
+
+def compute_hour_stats(hours):
+    """Compute circular mean, std, and peak hour range for a list of hours."""
+    if not hours:
+        return "N/A", "N/A", "N/A"
+    hours_rad = np.array(hours) * 2 * np.pi / 24
+    mean_sin = np.mean(np.sin(hours_rad))
+    mean_cos = np.mean(np.cos(hours_rad))
+    mean_angle = np.arctan2(mean_sin, mean_cos)
+    if mean_angle < 0:
+        mean_angle += 2 * np.pi
+    R = np.sqrt(mean_sin**2 + mean_cos**2)
+    circ_std = np.sqrt(-2 * np.log(R)) * 24 / (2 * np.pi) if R > 0 else float('nan')
+    sorted_hours = np.sort(hours)
+    n = len(sorted_hours)
+    if n > 1:
+        k = max(1, int(np.ceil(n * 0.5)))
+        min_width = 24
+        best_start = 0
+        for i in range(n):
+            j = (i + k) % n
+            if j > i:
+                width = sorted_hours[j-1] - sorted_hours[i]
+            else:
+                width = (sorted_hours[-1] - sorted_hours[i]) + (sorted_hours[j-1] - sorted_hours[0]) + 24
+            if width < min_width:
+                min_width = width
+                best_start = i
+        peak_start = sorted_hours[best_start]
+        peak_end = (peak_start + min_width) % 24
+        peak_start_str = f"{int(peak_start):02d}:{int((peak_start%1)*60):02d}"
+        peak_end_str = f"{int(peak_end):02d}:{int((peak_end%1)*60):02d}"
+        peak_hours_str = f"{peak_start_str} - {peak_end_str}"
+        hour_var_str = f"{circ_std:.1f} h" if not np.isnan(circ_std) else "N/A"
+    else:
+        peak_hours_str = "N/A"
+        hour_var_str = "N/A"
+    return peak_hours_str, hour_var_str, circ_std
+
+def buildStatRow(species, indices, predictedclass, predictedCount, date_objs):
+    species_dates = [date_objs[i] for i in indices]
+    species_counts = [predictedCount[i] for i in indices]
+    if species_dates:
+        num_dates = len(set(d.date() for d in species_dates))
+        max_count = max(species_counts) if species_counts else "N/A"
+        clustered_obs = cluster_datetimes(species_dates)
+        hours = [d.hour + d.minute/60.0 for d in clustered_obs]
+        peak_hours_str, hour_var_str, _ = compute_hour_stats(hours)
+    else:
+        num_dates = 0
+        peak_hours_str = hour_var_str = "N/A"
+        max_count = "N/A"
+    return [species, len(indices), num_dates, max_count, peak_hours_str, hour_var_str]
+
 def buildPredictedStatRows(species_set: list[str], predictedclass: list[str], predictedCount: list[int], date_objs: list[datetime.datetime]):
     rows = []
     for species in sorted(species_set):
         indices = [i for i, s in enumerate(predictedclass) if s == species]
-        species_dates: list[datetime.datetime] = [date_objs[i] for i in indices]
-        species_counts: list[str] = [predictedCount[i] for i in indices]
-        if species_dates:
-            num_dates = len(set(d.date() for d in species_dates))
-            max_count = max(species_counts) if species_counts else "N/A"
-            # Cluster observations within 5 minutes
-            sorted_datetimes = sorted(species_dates)
-            clustered_obs: list[datetime.datetime] = []
-            if sorted_datetimes:
-                current_cluster = [sorted_datetimes[0]]
-                for dt in sorted_datetimes[1:]:
-                    if (dt - current_cluster[-1]).total_seconds() <= 300:  # 5 minutes
-                        current_cluster.append(dt)
-                    else:
-                        mean_dt = current_cluster[0] + (current_cluster[-1] - current_cluster[0]) / 2 if len(current_cluster) > 1 else current_cluster[0]
-                        clustered_obs.append(mean_dt)
-                        current_cluster = [dt]
-                # Add last cluster
-                if current_cluster:
-                    mean_dt = current_cluster[0] + (current_cluster[-1] - current_cluster[0]) / 2 if len(current_cluster) > 1 else current_cluster[0]
-                    clustered_obs.append(mean_dt)
-            hours = [d.hour + d.minute/60.0 for d in clustered_obs]
-            if hours:
-                hours_rad = np.array(hours) * 2 * np.pi / 24
-                mean_sin = np.mean(np.sin(hours_rad))
-                mean_cos = np.mean(np.cos(hours_rad))
-                mean_angle = np.arctan2(mean_sin, mean_cos)
-                if mean_angle < 0:
-                    mean_angle += 2 * np.pi
-                R = np.sqrt(mean_sin**2 + mean_cos**2)
-                circ_std = np.sqrt(-2 * np.log(R)) * 24 / (2 * np.pi) if R > 0 else float('nan')
-                sorted_hours = np.sort(hours)
-                n = len(sorted_hours)
-                if n > 1:
-                    k = max(1, int(np.ceil(n * 0.5)))
-                    min_width = 24
-                    best_start = 0
-                    for i in range(n):
-                        j = (i + k) % n
-                        if j > i:
-                            width = sorted_hours[j-1] - sorted_hours[i]
-                        else:
-                            width = (sorted_hours[-1] - sorted_hours[i]) + (sorted_hours[j-1] - sorted_hours[0]) + 24
-                        if width < min_width:
-                            min_width = width
-                            best_start = i
-                    peak_start = sorted_hours[best_start]
-                    peak_end = (peak_start + min_width) % 24
-                    peak_start_str = f"{int(peak_start):02d}:{int((peak_start%1)*60):02d}"
-                    peak_end_str = f"{int(peak_end):02d}:{int((peak_end%1)*60):02d}"
-                    peak_hours_str = f"{peak_start_str} - {peak_end_str}"
-                    hour_var_str = f"{circ_std:.1f} h" if not np.isnan(circ_std) else "N/A"
-                else:
-                    peak_hours_str = "N/A"
-                    hour_var_str = "N/A"
-            else:
-                peak_hours_str = hour_var_str = "N/A"
-        else:
-            num_dates = 0
-            peak_hours_str = hour_var_str = "N/A"
-            max_count = "N/A"
-        rows.append([
-            species,
-            len(indices),
-            num_dates,
-            max_count,
-            peak_hours_str,
-            hour_var_str
-        ])
+        row = buildStatRow(species, indices, predictedclass, predictedCount, date_objs)
+        rows.append(row)
     return rows
 
 def buildTotalRow(species_set: list[str], rows: list[any], predictedclass: list[str], date_objs: list[datetime.datetime]):
-    # Prepare total row with stats
+    from data_extractions.extract_dates_info import getDatesRange
     total_days = getDatesRange(date_objs)[2]
     total_files = sum(r[1] for r in rows)
-    all_species_dates: list[datetime.datetime] = []
+    all_species_dates = []
     for species in sorted(species_set):
         indices = [i for i, s in enumerate(predictedclass) if s == species]
         all_species_dates.extend([date_objs[i] for i in indices])
-    if all_species_dates:
-        # Cluster all observations within 5 minutes
-        sorted_datetimes = sorted(all_species_dates)
-        clustered_obs: list[datetime.datetime] = []
-        if sorted_datetimes:
-            current_cluster = [sorted_datetimes[0]]
-            for dt in sorted_datetimes[1:]:
-                if (dt - current_cluster[-1]).total_seconds() <= 300:
-                    current_cluster.append(dt)
-                else:
-                    mean_dt = current_cluster[0] + (current_cluster[-1] - current_cluster[0]) / 2 if len(current_cluster) > 1 else current_cluster[0]
-                    clustered_obs.append(mean_dt)
-                    current_cluster = [dt]
-            if current_cluster:
-                mean_dt = current_cluster[0] + (current_cluster[-1] - current_cluster[0]) / 2 if len(current_cluster) > 1 else current_cluster[0]
-                clustered_obs.append(mean_dt)
-        hours = [d.hour + d.minute/60.0 for d in clustered_obs]
-        if hours:
-            hours_rad = np.array(hours) * 2 * np.pi / 24
-            mean_sin = np.mean(np.sin(hours_rad))
-            mean_cos = np.mean(np.cos(hours_rad))
-            mean_angle = np.arctan2(mean_sin, mean_cos)
-            if mean_angle < 0:
-                mean_angle += 2 * np.pi
-            R = np.sqrt(mean_sin**2 + mean_cos**2)
-            circ_std = np.sqrt(-2 * np.log(R)) * 24 / (2 * np.pi) if R > 0 else float('nan')
-            sorted_hours = np.sort(hours)
-            n = len(sorted_hours)
-            if n > 1:
-                k = max(1, int(np.ceil(n * 0.5)))
-                min_width = 24
-                best_start = 0
-                for i in range(n):
-                    j = (i + k) % n
-                    if j > i:
-                        width = sorted_hours[j-1] - sorted_hours[i]
-                    else:  
-                        width = (sorted_hours[-1] - sorted_hours[i]) + (sorted_hours[j-1] - sorted_hours[0]) + 24
-                    if width < min_width:
-                        min_width = width
-                        best_start = i
-                peak_start = sorted_hours[best_start]
-                peak_end = (peak_start + min_width) % 24
-                peak_start_str = f"{int(peak_start):02d}:{int((peak_start%1)*60):02d}"
-                peak_end_str = f"{int(peak_end):02d}:{int((peak_end%1)*60):02d}"
-                total_peak_hours = f"{peak_start_str}-{peak_end_str}"
-            else:
-                total_peak_hours = "N/A"
-            total_hour_var = f"{circ_std:.1f} h" if not np.isnan(circ_std) else "N/A"
-        else:
-            total_peak_hours = total_hour_var = "N/A"
-    else:
-        total_peak_hours = total_hour_var = "N/A"
+    clustered_obs = cluster_datetimes(all_species_dates)
+    hours = [d.hour + d.minute/60.0 for d in clustered_obs]
+    total_peak_hours, total_hour_var, _ = compute_hour_stats(hours)
     return ["Total", total_files, total_days, "N/A", total_peak_hours, total_hour_var]
