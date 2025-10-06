@@ -8,7 +8,9 @@ def generatePredictorResultsAsCSV(folder, filenames, predictions_results, gps_co
     predictedscore = predictions_results["scores"]
     dates = predictions_results["dates"]
     counts = predictions_results["counts"]
-    # TODO: remove any commas to avoid CSV issues
+    predictedclass = [str(c).replace(',', ' ') for c in predictedclass]
+    addresses = [str(a).replace(',', ' ') for a in addresses]
+    filenames = [str(f).replace(',', '') for f in filenames]
     newdf = pd.DataFrame({
         'filename':filenames, 
         'dates':dates, 
