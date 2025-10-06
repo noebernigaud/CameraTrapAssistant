@@ -19,7 +19,7 @@ from actions.stats_utils.graphics_data_generation.generate_animals_table_data im
 from actions.stats_utils.graphics_data_generation.generate_observations_by_time_graph import generateObservationsByTimeGraph, getDatesChunksForObservationsByTimeGraphs
 
 
-def generateStatsPDF(folder, filenames, predictions_results, addresses, csv_path=None):
+def generateStatsPDF(folder, name, predictions_results, addresses, csv_path=None):
     ### Extract data ###
 
     predictedclass = predictions_results["predictions"]
@@ -30,10 +30,26 @@ def generateStatsPDF(folder, filenames, predictions_results, addresses, csv_path
     # Get existing CSV data if provided
     existing_csv_predictions = None
     if csv_path:
-        existing_csv_predictions = retrieveDataFromCSV(csv_path)  
+        existing_csv_predictions = retrieveDataFromCSV(csv_path)
+        if existing_csv_predictions:
+            combined_predicted_class = existing_csv_predictions["predictions"] + predictedclass
+            combined_predicted_count = existing_csv_predictions["counts"] + predictedCount
+            combined_predicted_date_objs = [datetime.datetime.strptime(d, "%Y-%m-%d %H:%M:%S") for d in existing_csv_predictions["dates"]] + date_objs
+            # Use combined data for PDF generation
+            generateStatsPDF(
+                folder,
+                "combined_" + name,
+                {
+                    "predictions": combined_predicted_class,
+                    "counts": combined_predicted_count,
+                    "dates": combined_predicted_date_objs
+                },
+                addresses,
+                csv_path=None  # Avoid infinite recursion
+            )
 
     # Calculate stats
-    num_videos = len(filenames)
+    num_videos = len(predictedclass)
     num_with_animals, percent_with_animals = getFilesWithAnimalsProportions(num_videos, predictedclass)
 
     # Dates
@@ -44,10 +60,10 @@ def generateStatsPDF(folder, filenames, predictions_results, addresses, csv_path
 
 
     ### Generation PDG ###
-
+    
     data_folder = os.path.join(folder, "data")
     os.makedirs(data_folder, exist_ok=True)
-    doc = SimpleDocTemplate(os.path.join(data_folder, "stats.pdf"), pagesize=letter)
+    doc = SimpleDocTemplate(os.path.join(data_folder, f"{name}.pdf"), pagesize=letter)
     styles = getSampleStyleSheet()
     elements = []
 

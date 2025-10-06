@@ -8,14 +8,16 @@ def generatePredictorResultsAsCSV(folder, filenames, predictions_results, gps_co
     predictedscore = predictions_results["scores"]
     dates = predictions_results["dates"]
     counts = predictions_results["counts"]
+    # TODO: remove any commas to avoid CSV issues
     newdf = pd.DataFrame({
         'filename':filenames, 
         'dates':dates, 
-        'city':addresses,
-        'gps':gps_coordinates,
         'prediction':predictedclass, 
         'counts':counts,
-        'score':predictedscore
+        'score':predictedscore,
+        'city':addresses,
+        'gps_lat': (lat for lat, _ in gps_coordinates),
+        'gps_lon':(lon for _, lon in gps_coordinates)
     })
     # Create 'data' folder inside VIDEOPATH if it doesn't exist
     data_folder = os.path.join(folder, "data")
@@ -25,8 +27,9 @@ def generatePredictorResultsAsCSV(folder, filenames, predictions_results, gps_co
         try:
             existing_df = pd.read_csv(csv_path)
             combined_df = pd.concat([existing_df, newdf], ignore_index=True)
-            combined_df.to_csv(csv_path, index=False)
-            logging.info('Done, results appended to ' + csv_path)
+            combined_csv_out_path = os.path.join(data_folder, "deepFaune_combined_results.csv")
+            combined_df.to_csv(combined_csv_out_path, index=False)
+            logging.info('DOne, results appended to ' + csv_path + ' and saved combined results to ' + combined_csv_out_path)
         except Exception as e:
             logging.error(f"Failed to append to CSV {csv_path}: {e}")
             raise
