@@ -1,10 +1,10 @@
-
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import os
 import sys
 import threading
 import logging
+from tkinter import ttk
 
 # Import project utilities
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -12,6 +12,8 @@ from objects.options_config import OptionsConfig
 from actions.run import runWithArgs
 from GUI_utils.gui_logging import TkinterLogHandler
 from GUI_utils.gui_config import load_checkbox_state, save_checkbox_state
+from GUI_utils.gui_tooltip import CheckWithTooltip, LabelWithTooltip, ToolTip
+from time_utils.timeOffsetToTimezone import convert_to_timezone, time_offset_to_timezone
 
 
 
@@ -51,7 +53,8 @@ def run():
         prediction_threshold = threshold_var.get(),
         get_gps_from_each_file = get_gps_each_var.get(),
         use_gps_only_for_data = use_gps_only_for_data_var.get(),
-        combine_with_data= combine_with_data_var.get()
+        combine_with_data= combine_with_data_var.get(),
+        time_offset = time_offset_var.get()
     )
     save_checkbox_state(options_config)
     lat, lon = None, None
@@ -88,7 +91,7 @@ def main():
     Sets up the window, widgets, and logging.
     """
     global root, folder, label, log_text
-    global data_var, stats_var, move_empty_var, move_undefined_var, rename_var, get_gps_each_var, use_gps_only_for_data_var, threshold_var, combine_with_data_var
+    global data_var, stats_var, move_empty_var, move_undefined_var, rename_var, get_gps_each_var, use_gps_only_for_data_var, threshold_var, combine_with_data_var, time_offset_var
     global gps_var, coord_var
     root = tk.Tk()
     root.title("DeepFaune custom script")
@@ -135,7 +138,7 @@ def main():
     # Load saved checkbox state
     options_config = load_checkbox_state()
 
-    # --- Redesigned Options Section ---
+    # --- Options Section ---
     # Variables
     data_var = tk.BooleanVar(value=options_config.generate_data)
     stats_var = tk.BooleanVar(value=options_config.generate_stats)
@@ -146,6 +149,7 @@ def main():
     get_gps_each_var = tk.BooleanVar(value=options_config.get_gps_from_each_file)
     use_gps_only_for_data_var = tk.BooleanVar(value=options_config.use_gps_only_for_data)
     combine_with_data_var = tk.BooleanVar(value=options_config.combine_with_data)
+    time_offset_var = tk.StringVar(value=options_config.time_offset)
     threshold_var = tk.DoubleVar(value=options_config.prediction_threshold)
 
     # Main options frame
@@ -155,22 +159,52 @@ def main():
     # Folder sort row
     folder_sort_frame = tk.Frame(options_frame)
     tk.Label(folder_sort_frame, text="Folder sort :", width=32, anchor="w").pack(side=tk.LEFT)
-    tk.Checkbutton(folder_sort_frame, text="Empty results to subfolder", width=32, anchor="w", variable=move_empty_var).pack(side=tk.LEFT)
-    tk.Checkbutton(folder_sort_frame, text="Undefined results to subfolder", width=32, anchor="w", variable=move_undefined_var).pack(side=tk.LEFT)
+    CheckWithTooltip(
+        folder_sort_frame,
+        "Empty results to subfolder",
+        move_empty_var,
+        "Moves all files with no detected animals to a subfolder named 'empty'."
+    ).pack(side=tk.LEFT)
+    CheckWithTooltip(
+        folder_sort_frame,
+        "Undefined results to subfolder",
+        move_undefined_var,
+        "Moves all files with a prediction score under the prediction threshold to a subfolder named 'undefined'.\nYou can adjust the prediction threshold by cliking on 'more'."
+    ).pack(side=tk.LEFT)
     folder_sort_frame.pack(fill="x", pady=1, padx=30)
 
     # Files update row
     files_update_frame = tk.Frame(options_frame)
     tk.Label(files_update_frame, text="Files update :", width=32, anchor="w").pack(side=tk.LEFT)
-    tk.Checkbutton(files_update_frame, text="Rename with date and info", width=32, anchor="w", variable=rename_var).pack(side=tk.LEFT)
-    tk.Checkbutton(files_update_frame, text="Add GPS location", width=32, anchor="w", variable=gps_var).pack(side=tk.LEFT)
+    CheckWithTooltip(
+        files_update_frame,
+        "Rename with date and info",
+        rename_var,
+        "Renames files to include the date and prediction in the filename.\nBe sure you will not need the original files' name, as they will be lost."
+    ).pack(side=tk.LEFT)
+    CheckWithTooltip(
+        files_update_frame,
+        "Add GPS location",
+        gps_var,
+        "After clicking on 'Run', a map will open for you to select the GPS coordinates to add to all the files.\nHaving access to GPS data will allow for more information in the generated files in the data section.\nThe added GPS data will also be usable by other applications, such as Windows' photo viewer or Google photos.\nIf the files already have GPS data, it will be overwritten unless 'Use added GPS data without updating files' is checked."
+    ).pack(side=tk.LEFT)
     files_update_frame.pack(fill="x", pady=1, padx=30)
 
     # Data generation row
     data_gen_frame = tk.Frame(options_frame)
     tk.Label(data_gen_frame, text="Data generation :", width=32, anchor="w").pack(side=tk.LEFT)
-    tk.Checkbutton(data_gen_frame, text="CSV file", width=32, anchor="w", variable=data_var).pack(side=tk.LEFT)
-    tk.Checkbutton(data_gen_frame, text="Statistics files", width=32, anchor="w", variable=stats_var).pack(side=tk.LEFT)
+    CheckWithTooltip(
+        data_gen_frame,
+        "CSV file",
+        data_var,
+        "Generates a CSV file in a 'data' subfolder with all relevant information about the files and their corresponding prediction.\nIt is recommanded to keep this option checked, as the CSV file can be useful for debugging or future data analysis combinations."
+    ).pack(side=tk.LEFT)
+    CheckWithTooltip(
+        data_gen_frame,
+        "Statistics file",
+        stats_var,
+        "Generates a PDF file in a 'data' subfolder with various statistics and graphs about the files.\nIf you want to combine the data with previous results, check 'Combine data results with existing CSV' in 'more'."
+    ).pack(side=tk.LEFT)
     data_gen_frame.pack(fill="x", pady=1, padx=30)
 
     # --- More (foldable) section ---
@@ -182,20 +216,81 @@ def main():
             more_content.pack(fill="x", pady=(2, 0))
             more_btn.config(text="more ▲")
 
-    more_btn = tk.Button(options_frame, text="more ▼", font=("Arial", 10, "italic"), bd=0, fg="#444", cursor="hand2", command=toggle_more)
+    more_btn = tk.Button(options_frame, text="more ▼", font=("Arial", 10, "italic bold"), bd=0, fg="#444", cursor="hand2", command=toggle_more)
     more_btn.pack(anchor="w", pady=(6, 0), padx=20)
 
     more_content = tk.Frame(options_frame)
     # Prediction threshold slider
     threshold_row = tk.Frame(more_content)
-    tk.Label(threshold_row, text="Adjust prediction threshold :", width=26, anchor="w").pack(side=tk.LEFT)
+    LabelWithTooltip(
+        threshold_row, 
+        "Adjust prediction threshold", 
+        "Adjust the prediction threshold used to determine if a prediction is valid or should be considered undefined.\nA higher threshold means more confidence in the predictions, but may result in more undefined results.",
+        width = 200
+    ).pack(side=tk.LEFT, anchor="s", pady=(0, 5))
     threshold_slider = tk.Scale(threshold_row, from_=0.0, to=1.0, orient=tk.HORIZONTAL, resolution=0.01, variable=threshold_var, showvalue=True, length=180)
-    threshold_slider.pack(side=tk.LEFT, padx=5)
+    threshold_slider.pack(side=tk.LEFT, anchor="s")
     threshold_row.pack(fill="x", pady=2, padx=30)
+    
+    # Timezone offset selector
+    timezone_row = tk.Frame(more_content)
+    LabelWithTooltip(
+        timezone_row, 
+        "Time offset", 
+        "Select the time offset to apply to the files' datetime.\nThe 'auto' value will attempt to keep the original timezone information if present, or else use the timezone of your machine.\nSelect an offset if you want to run the program on files with a different timezone than your machine's, or if you are getting unexpected date results.\nYou can test the selected offset on a file of your choice by clicking the 'Test file date' button.",
+        width = 200
+    ).pack(side=tk.LEFT)
+    # Build list of offsets: auto, UTC-12:00 to UTC+14:00
+    offsets = [f"UTC{sign}{abs(h):02d}:{abs(m):02d}" for h in range(-12, 15) for m in [0, 30] for sign in ["+" if h >= 0 else "-"] if not (h == 0 and sign == "-")]
+    offsets = sorted(set(offsets), key=lambda x: (x != "auto", x))
+    offsets.insert(0, "auto")
+    timezone_combo = ttk.Combobox(
+        timezone_row,
+        textvariable=time_offset_var,
+        values=offsets,
+        state="readonly",
+        width=12
+    )
+    timezone_combo.pack(side=tk.LEFT, padx=3)
+    # Button to test selected file's date
+    def test_selected_file_date():
+        from deepFauneApp.fileManager import FileManager
+        file_path = filedialog.askopenfilename(title="Select a video or photo file")
+        if file_path:
+            try:
+                fm = FileManager([file_path])
+                date = fm.getDates()[0]
+                messagebox.showinfo("Selected File Date", f"Date for selected file after timezone conversion: {convert_to_timezone(date, time_offset_to_timezone(time_offset_var.get()))}")
+            except Exception as e:
+                messagebox.showerror("Error", f"Could not get date: {e}")
+        else:
+            messagebox.showerror("Error", "No file selected.")
+    test_date_btn = tk.Button(timezone_row, text="Test file date", command=test_selected_file_date, width=12, height=1, bd=1)
+    test_date_btn.pack(side=tk.LEFT, padx=5)
+    timezone_row.pack(fill="x", pady=2, padx=30)
+
     # More checkboxes
-    tk.Checkbutton(more_content, text="Get GPS data for each video independently", variable=get_gps_each_var).pack(anchor="w", padx=30)
-    tk.Checkbutton(more_content, text="Use added GPS data without updating files", variable=use_gps_only_for_data_var).pack(anchor="w", padx=30)
-    tk.Checkbutton(more_content, text="Combine data results with existing CSV", variable=combine_with_data_var).pack(anchor="w", padx=30)
+    CheckWithTooltip(
+        more_content,
+        "Get GPS data from each file independently",
+        get_gps_each_var,
+        "Get the GPS data from each file instead of using the same coordinates for all files.\nThis requires that the files already have GPS data, and will have no effect if the option 'add GPS location' is checked.\nBe aware that this will make the processing longer, as each file will need to be read to extract the GPS data.",
+        width=320
+    ).pack(anchor="w", padx=30, pady=(5, 0))
+    CheckWithTooltip(
+        more_content,
+        "Use added GPS data without updating files",
+        use_gps_only_for_data_var,
+        "Use the added GPS location for data generation without modifying the files.\nThis is useful if you want to keep the original files unchanged, but still want to benefit from GPS data in the generated CSV and statistics.\nWill have no effect if the option 'Add GPS location' is not checked.",
+        width=320
+    ).pack(anchor="w", padx=30, pady=(5, 0))
+    CheckWithTooltip(
+        more_content,
+        "Combine data results with existing CSV",
+        combine_with_data_var,
+        "Generates in the 'data' subfolder a CSV that combines the existing selected CSV data with this run's results.\nAlso generates the combined statistics PDF if the option 'Statistics file' is checked.\nThis is useful if you have previous data from other runs or sources that you want to include in the statistics.\nYou will be prompted to select the CSV file when you click 'Run'.",
+        width=320
+    ).pack(anchor="w", padx=30, pady=(5, 0))
     # Start folded
     more_content.pack_forget()
 
