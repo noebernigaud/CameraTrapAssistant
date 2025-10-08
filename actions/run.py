@@ -1,3 +1,4 @@
+import datetime
 import logging 
 import sys
 import os
@@ -13,6 +14,7 @@ from actions.renameFiles import rename_videos_with_date_and_info
 # Import project utilities
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from objects.options_config import OptionsConfig
+from time_utils.timeOffsetToTimezone import time_offset_to_timezone
 
 def runWithArgs(folder, options_config: OptionsConfig, lat=None, lon=None, csv_path=None):
     ## VIDEOS FILE
@@ -29,8 +31,9 @@ def runWithArgs(folder, options_config: OptionsConfig, lat=None, lon=None, csv_p
     else :
         gps_coordinates, addresses = extract_existing_gps(filenames, options_config.get_gps_from_each_file)
 
-    if options_config.rename_files or options_config.generate_data or options_config.generate_stats or options_config.move_empty or options_config.move_undefined:
-        prediction_results = predict_videos(filenames, options_config.prediction_threshold)
+    if options_config.rename_files or options_config.generate_data or options_config.generate_stats or options_config.move_empty or options_config.move_undefined or options_config.combine_with_data:
+        timezone: datetime.tzinfo = time_offset_to_timezone(options_config.time_offset)
+        prediction_results = predict_videos(filenames, options_config.prediction_threshold, timezone)
     else:
         logging.info("No data generation or moving of empty videos selected, skipping prediction step.")
 

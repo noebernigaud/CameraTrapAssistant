@@ -3,8 +3,13 @@ from logging.handlers import QueueListener
 from multiprocessing import Manager
 from concurrent.futures import ProcessPoolExecutor
 import os
+import datetime
+import sys
 
-def _predict_videos_worker(filenames, threshold, LANG, log_queue):
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from time_utils.timeOffsetToTimezone import convert_to_timezone
+
+def _predict_videos_worker(filenames, threshold, timezone, LANG, log_queue):
     """
     Runs in a separate process and sends log messages to the parent via a queue.
     """
@@ -37,7 +42,13 @@ def _predict_videos_worker(filenames, threshold, LANG, log_queue):
     logging.info("Predictions completed")
 
     predictions, scores, _, counts = predictor.getPredictions()
-    dates = predictor.getDates()
+    dates: list[datetime.datetime] = predictor.getDates()
+    logging.info(f"Using timezone: {timezone}")
+
+    # Assume dates are in UTC, convert them to timezone_to_use
+    logging.info(f"First video date before timezone adjustment: {dates[0] if dates else 'No dates available'}")
+    dates = [convert_to_timezone(d, timezone) for d in dates]
+    logging.info(f"First video date after timezone adjustment: {dates[0] if dates else 'No dates available'}")
 
     return {
         "predictions": predictions,
@@ -46,7 +57,7 @@ def _predict_videos_worker(filenames, threshold, LANG, log_queue):
         "counts": counts
     }
 
-def predict_videos(filenames, threshold=0.8, LANG="en"):
+def predict_videos(filenames, threshold, timezone, LANG="en"):
     logging.info("Lauching predictor subprocess...")
     manager = Manager()
     log_queue = manager.Queue()
@@ -69,7 +80,7 @@ def predict_videos(filenames, threshold=0.8, LANG="en"):
     try:
         with ProcessPoolExecutor(max_workers=1) as executor:
             future = executor.submit(_predict_videos_worker,
-                                     filenames, threshold, LANG, log_queue)
+                                     filenames, threshold, timezone, LANG, log_queue)
             result = future.result()
     finally:
         listener.stop()

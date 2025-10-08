@@ -12,3 +12,4 @@ class OptionsConfig:
     get_gps_from_each_file: bool
     use_gps_only_for_data: bool
     combine_with_data: bool
+    time_offset: str  # 'auto' or timezone offset like 'UTC+02:00'

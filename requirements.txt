@@ -11,3 +11,4 @@ hachoir
 tkintermapview
 geopy
 reportlab
+tzlocal

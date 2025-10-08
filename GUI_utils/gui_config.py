@@ -16,6 +16,7 @@ def get_config_file_path():
 def load_checkbox_state():
     """
     Loads the checkbox state from the config file. Returns an OptionsConfig containing booleans for each option.
+    Also loads the time offset selector value as 'time_offset'.
     """
     config = configparser.ConfigParser()
     config_file = get_config_file_path()
@@ -31,7 +32,8 @@ def load_checkbox_state():
             prediction_threshold = config.getfloat('options', 'prediction_threshold', fallback=0.9),
             get_gps_from_each_file = config.getboolean('options', 'get_gps_from_each_file', fallback=False),
             use_gps_only_for_data = config.getboolean('options', 'use_gps_only_for_data', fallback=False),
-            combine_with_data= config.getboolean('options', 'combine_with_data', fallback=False)
+            combine_with_data= config.getboolean('options', 'combine_with_data', fallback=False),
+            time_offset = config.get('options', 'time_offset', fallback='auto')
         )
     else:
         state = OptionsConfig(
@@ -44,13 +46,14 @@ def load_checkbox_state():
             prediction_threshold = 0.9,
             get_gps_from_each_file = False,
             use_gps_only_for_data = False,
-            combine_with_data= False
+            combine_with_data= False,
+            time_offset = 'auto'
         )
     return state
 
 def save_checkbox_state(newOptionsConfig: OptionsConfig):
     """
-    Saves the checkbox state to the config file, preserving other sections. Now also saves GPS add checkbox.
+    Saves the checkbox state to the config file, preserving other sections. Now also saves GPS add checkbox and time offset.
     """
     config = configparser.ConfigParser()
     config_file = get_config_file_path()
@@ -68,6 +71,7 @@ def save_checkbox_state(newOptionsConfig: OptionsConfig):
     config['options']['get_gps_from_each_file'] = str(newOptionsConfig.get_gps_from_each_file)
     config['options']['use_gps_only_for_data'] = str(newOptionsConfig.use_gps_only_for_data)
     config['options']['combine_with_data'] = str(newOptionsConfig.combine_with_data)
+    config['options']['time_offset'] = str(newOptionsConfig.time_offset)
     with open(config_file, 'w') as configfile:
         config.write(configfile)
 
