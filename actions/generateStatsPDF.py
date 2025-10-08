@@ -14,25 +14,32 @@ from actions.exifGPS import getCity
 from actions.stats_utils.data_extractions.extract_dates_info import getDatesRange
 from actions.stats_utils.data_extractions.extract_percent_info import getFilesWithAnimalsProportions
 from actions.stats_utils.data_extractions.retrieve_CSV_data import retrieveDataFromCSV
+from actions.stats_utils.data_extractions.prediction_results_filter import get_predictions_results_with_valid_dates
 from actions.stats_utils.graphics_data_generation.generate_animals_table_data import buildAnimalsTableData
 from actions.stats_utils.graphics_data_generation.generate_observations_by_time_graph import generateObservationsByTimeGraph, getDatesChunksForObservationsByTimeGraphs
 
 
 def generateStatsPDF(folder, name, predictions_results, addresses, csv_path=None):
     ### Extract data ###
+    logging.info("Extracting data for stats PDF generation...")
+
+    predictions_results = get_predictions_results_with_valid_dates(predictions_results)
 
     predictedclass = predictions_results["predictions"]
     predictedCount = predictions_results["counts"]
     date_objs: list[datetime.datetime] = predictions_results["dates"]
+
     species_set = set(predictedclass)
 
     # Get existing CSV data if provided
     existing_csv_predictions = None
     if csv_path:
-        existing_csv_predictions = retrieveDataFromCSV(csv_path)
+        logging.info(f"Retrieving existing CSV data from {csv_path} for combined stats generation...")
+        existing_csv_predictions = get_predictions_results_with_valid_dates(retrieveDataFromCSV(csv_path))
         if existing_csv_predictions:
             combined_predicted_class = existing_csv_predictions["predictions"] + predictedclass
             combined_predicted_count = existing_csv_predictions["counts"] + predictedCount
+            combined_predicted_score = existing_csv_predictions["scores"] + predictions_results.get("scores", [])
             combined_predicted_date_objs = [datetime.datetime.fromisoformat(d) for d in existing_csv_predictions["dates"]] + date_objs
             # Use combined data for PDF generation
             generateStatsPDF(
@@ -41,7 +48,8 @@ def generateStatsPDF(folder, name, predictions_results, addresses, csv_path=None
                 {
                     "predictions": combined_predicted_class,
                     "counts": combined_predicted_count,
-                    "dates": combined_predicted_date_objs
+                    "dates": combined_predicted_date_objs,
+                    "scores": combined_predicted_score
                 },
                 addresses,
                 csv_path=None  # Avoid infinite recursion
@@ -59,6 +67,7 @@ def generateStatsPDF(folder, name, predictions_results, addresses, csv_path=None
 
 
     ### Generation PDG ###
+    logging.info(f"Generating {name} PDF...")
     
     data_folder = os.path.join(folder, "data")
     os.makedirs(data_folder, exist_ok=True)
@@ -103,7 +112,6 @@ def generateStatsPDF(folder, name, predictions_results, addresses, csv_path=None
 
     # Chucking dates for graphs
     date_chunks = getDatesChunksForObservationsByTimeGraphs(date_objs)
-    logging.info(f"Generating PDF with {len(date_chunks)} graph(s)")
 
     # --- Add one graph per chunk of dates ---
     species_colors = {s: plt.cm.tab20(i) for i, s in enumerate(sorted(species_set))}
@@ -117,3 +125,4 @@ def generateStatsPDF(folder, name, predictions_results, addresses, csv_path=None
         elements.append(Paragraph("No detections to plot.", styles['Normal']))
 
     doc.build(elements)
+    logging.info(f"Succesfully generated {name} PDF.")

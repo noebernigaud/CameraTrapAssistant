@@ -40,6 +40,8 @@ def time_offset_to_timezone(time_offset: str) -> datetime.tzinfo:
         return datetime.datetime.now().astimezone().tzinfo
     
 def convert_to_timezone(dt: datetime.datetime, tz: datetime.tzinfo):
+        if dt is None or dt == "NA":
+            return None
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=datetime.timezone.utc)
         return dt.astimezone(tz)

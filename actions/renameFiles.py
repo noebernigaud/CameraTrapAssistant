@@ -5,13 +5,14 @@ import logging
 def rename_videos_with_date_and_info(filenames, predicted_classes, dates):
     logging.info("Renaming videos with date and predicted animal...")
     for i, (file, pred, date) in enumerate(zip(filenames, predicted_classes, dates)):
-        if not date:
-            continue
-        # Format date en 2025.09.19__22h30
-        date_str = date.strftime('%Y.%m.%d_%Hh%M')
-        ext = Path(file).suffix
-        base_name = f"{date_str}__{pred}"
         old_path = Path(file)
+        ext = Path(file).suffix
+        if not date:
+            date_str = "unknown_date"
+        else:
+            # Format date en 2025.09.19__22h30
+            date_str = date.strftime('%Y.%m.%d_%Hh%M')
+        base_name = f"{date_str}__{pred}"
 
         # === Vérifier doublons ===
         counter = 0
