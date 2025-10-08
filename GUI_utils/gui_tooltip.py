@@ -46,7 +46,7 @@ class _BaseWithTooltip(tk.Frame):
         info_icon = tk.Label(
             self,
             text="🛈",
-            font=("Segoe UI", 10),
+            font=("Segoe UI", 11),
             fg="#747474",
             cursor="question_arrow"
         )
