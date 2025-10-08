@@ -1,9 +1,8 @@
 import datetime
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
-from reportlab.platypus import Table, TableStyle, Image, SimpleDocTemplate, Paragraph, Spacer
+from reportlab.platypus import Table, TableStyle, SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
-import io
 import os
 import matplotlib
 import logging
@@ -34,7 +33,7 @@ def generateStatsPDF(folder, name, predictions_results, addresses, csv_path=None
         if existing_csv_predictions:
             combined_predicted_class = existing_csv_predictions["predictions"] + predictedclass
             combined_predicted_count = existing_csv_predictions["counts"] + predictedCount
-            combined_predicted_date_objs = [datetime.datetime.strptime(d, "%Y-%m-%d %H:%M:%S") for d in existing_csv_predictions["dates"]] + date_objs
+            combined_predicted_date_objs = [datetime.datetime.fromisoformat(d) for d in existing_csv_predictions["dates"]] + date_objs
             # Use combined data for PDF generation
             generateStatsPDF(
                 folder,
