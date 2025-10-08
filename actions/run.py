@@ -18,13 +18,25 @@ from time_utils.timeOffsetToTimezone import time_offset_to_timezone
 
 def runWithArgs(folder, options_config: OptionsConfig, lat=None, lon=None, csv_path=None):
     ## VIDEOS FILE
-    filenames = sorted(
+    video_filenames = sorted(
             [str(f) for f in Path(folder).rglob('*.[Aa][Vv][Ii]')] +
             [str(f) for f in Path(folder).rglob('*.[Mm][Pp]4')] +
             [str(f) for f in Path(folder).rglob('*.[Mm][Pp][Ee][Gg]')] +
             [str(f) for f in Path(folder).rglob('*.[Mm][Oo][Vv]')] +
             [str(f) for f in Path(folder).rglob('*.[Mm]4[Vv]')]
         )
+    logging.info(f"Found {len(video_filenames)} video files in folder {folder}")
+    
+    photo_filenames = sorted(
+            [str(f) for f in Path(folder).rglob('*.png')] +
+            [str(f) for f in Path(folder).rglob('*.jpg')] +
+            [str(f) for f in Path(folder).rglob('*.jpeg')] +
+            [str(f) for f in Path(folder).rglob('*.tiff')] +
+            [str(f) for f in Path(folder).rglob('*.bmp')] +
+            [str(f) for f in Path(folder).rglob('*.gif')]
+    )
+    logging.info(f"Found {len(photo_filenames)} image files in folder {folder}")
+    filenames = video_filenames + photo_filenames
     
     if options_config.add_gps and lat is not None and lon is not None:
         gps_coordinates, addresses = add_and_extract_gps(filenames, lat, lon, options_config.use_gps_only_for_data)
@@ -33,7 +45,7 @@ def runWithArgs(folder, options_config: OptionsConfig, lat=None, lon=None, csv_p
 
     if options_config.rename_files or options_config.generate_data or options_config.generate_stats or options_config.move_empty or options_config.move_undefined or options_config.combine_with_data:
         timezone: datetime.tzinfo = time_offset_to_timezone(options_config.time_offset)
-        prediction_results = predict_videos(filenames, options_config.prediction_threshold, timezone)
+        prediction_results = predict_videos(video_filenames, photo_filenames, options_config.prediction_threshold, timezone)
     else:
         logging.info("No data generation or moving of empty videos selected, skipping prediction step.")
 
