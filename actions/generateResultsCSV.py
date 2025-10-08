@@ -31,7 +31,7 @@ def generatePredictorResultsAsCSV(folder, filenames, predictions_results, gps_co
             combined_df = pd.concat([existing_df, newdf], ignore_index=True)
             combined_csv_out_path = os.path.join(data_folder, "deepFaune_combined_results.csv")
             combined_df.to_csv(combined_csv_out_path, index=False)
-            logging.info('DOne, results appended to ' + csv_path + ' and saved combined results to ' + combined_csv_out_path)
+            logging.info('CSV results appended to ' + csv_path + ' and saved combined results to ' + combined_csv_out_path)
         except Exception as e:
             logging.error(f"Failed to append to CSV {csv_path}: {e}")
             raise
@@ -39,4 +39,4 @@ def generatePredictorResultsAsCSV(folder, filenames, predictions_results, gps_co
         # Always save as 'deepFaune_results.csv' in the 'data' folder
         csv_out_path = os.path.join(data_folder, "deepFaune_results.csv")
         newdf.to_csv(csv_out_path, index=False)
-        logging.info('Done, results saved in ' + csv_out_path)
+        logging.info('CSV results saved in ' + csv_out_path)
