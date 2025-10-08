@@ -32,7 +32,9 @@ def is_valid_date(d):
         return True
     if isinstance(d, str):
         try:
-            datetime.fromisoformat(d)
+            date_obj = datetime.fromisoformat(d)
+            if date_obj.date == datetime(1970, 1, 1):
+                return False
             return True
         except Exception:
             return False
