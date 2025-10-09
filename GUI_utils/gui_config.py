@@ -11,7 +11,7 @@ def get_config_file_path():
     """
     Returns the path to the GUI config file.
     """
-    return os.path.join(os.path.dirname(__file__), '..', 'commands', 'deepfaune_gui.ini')
+    return os.path.join(os.path.dirname(__file__), '..', 'deepfaune_gui.ini')
 
 def load_checkbox_state():
     """
