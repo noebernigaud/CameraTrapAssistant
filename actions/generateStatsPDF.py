@@ -16,7 +16,7 @@ from actions.stats_utils.data_extractions.extract_percent_info import getFilesWi
 from actions.stats_utils.data_extractions.retrieve_CSV_data import retrieveDataFromCSV
 from actions.stats_utils.data_extractions.prediction_results_filter import get_predictions_results_with_valid_dates
 from actions.stats_utils.graphics_data_generation.generate_animals_table_data import buildAnimalsTableData
-from actions.stats_utils.graphics_data_generation.generate_observations_by_time_graph import generateObservationsByTimeGraph, getDatesChunksForObservationsByTimeGraphs
+from actions.stats_utils.graphics_data_generation.generate_observations_by_time_graph import generateCircularObservationsGraph, generateKDEByTimeAndSpeciesGraph, generateObservationsByTimeAndDaysGraph, generateObservationsByTimeAndSpeciesGraph, getDatesChunksForObservationsByTimeGraphs
 
 
 def generateStatsPDF(folder, name, predictions_results, addresses, csv_path=None):
@@ -115,10 +115,15 @@ def generateStatsPDF(folder, name, predictions_results, addresses, csv_path=None
 
     # --- Add one graph per chunk of dates ---
     species_colors = {s: plt.cm.tab20(i) for i, s in enumerate(sorted(species_set))}
+
+    observations_by_time_and_species_graph = generateCircularObservationsGraph(species_set, predictedclass, date_objs, species_colors)
+    elements.append(observations_by_time_and_species_graph)
+    elements.append(Spacer(1, 24))
+
     if date_chunks:
         for _, chunk_dates_list in enumerate(date_chunks):
-            observations_by_time_graph = generateObservationsByTimeGraph(species_set, predictedclass, date_objs, species_colors, chunk_dates_list)
-            elements.append(observations_by_time_graph)
+            observations_by_time_and_day_graph = generateObservationsByTimeAndDaysGraph(species_set, predictedclass, date_objs, species_colors, chunk_dates_list)
+            elements.append(observations_by_time_and_day_graph)
             elements.append(Spacer(1, 24))
     else:
         # No dates, add a placeholder

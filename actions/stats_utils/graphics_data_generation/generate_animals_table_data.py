@@ -7,6 +7,8 @@ from reportlab.platypus import Paragraph
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from data_extractions.extract_dates_info import getDatesRange
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+from time_utils.cluster_datetimes import cluster_datetimes
 
 def buildAnimalsTableData(species_set: list[str], predictedclass: list[str], predictedCount: list[int], date_objs: list[datetime.datetime]):
     header = ["Species", "Files", "Days", "Max Count", "Peak Hours", "Hour Variability"]
@@ -41,25 +43,6 @@ def format_table_data(header, total_row, empty_row, undefined_row, animal_rows):
     for r in animal_rows:
         table_data.append([str(cell) for cell in r])
     return table_data
-
-def cluster_datetimes(datetimes, max_gap_seconds=300):
-    """Cluster datetimes within max_gap_seconds (default 5 min) and return cluster means."""
-    if not datetimes:
-        return []
-    sorted_datetimes = sorted(datetimes)
-    clusters = []
-    current_cluster = [sorted_datetimes[0]]
-    for dt in sorted_datetimes[1:]:
-        if (dt - current_cluster[-1]).total_seconds() <= max_gap_seconds:
-            current_cluster.append(dt)
-        else:
-            mean_dt = current_cluster[0] + (current_cluster[-1] - current_cluster[0]) / 2 if len(current_cluster) > 1 else current_cluster[0]
-            clusters.append(mean_dt)
-            current_cluster = [dt]
-    if current_cluster:
-        mean_dt = current_cluster[0] + (current_cluster[-1] - current_cluster[0]) / 2 if len(current_cluster) > 1 else current_cluster[0]
-        clusters.append(mean_dt)
-    return clusters
 
 def compute_hour_stats(hours):
     """Compute circular mean, std, and peak hour range for a list of hours."""

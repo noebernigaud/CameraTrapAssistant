@@ -1,12 +1,19 @@
 import matplotlib
 import datetime
 import io
+import sys
+import os
 from reportlab.platypus import Image
+import numpy as np
+from scipy.stats import gaussian_kde
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+from time_utils.cluster_datetimes import cluster_datetimes
 
 matplotlib.use('agg')   
 import matplotlib.pyplot as plt
 
-def generateObservationsByTimeGraph(species_set: list[str], predictedclass: list[str], date_objs: list[datetime.datetime], species_colors: dict[str, str], chunk_dates_list: list[datetime.date]):
+def generateObservationsByTimeAndDaysGraph(species_set: list[str], predictedclass: list[str], date_objs: list[datetime.datetime], species_colors: dict[str, str], chunk_dates_list: list[datetime.date]):
     hours = list(range(24))
     chunk_dates_list = sorted(chunk_dates_list, reverse=True)
     num_dates = len(chunk_dates_list)
@@ -38,6 +45,148 @@ def generateObservationsByTimeGraph(species_set: list[str], predictedclass: list
     img_width = 500
     img_height = int(fig_height * 72)
     return Image(img_buffer, width=img_width, height=img_height)
+
+def generateObservationsByTimeAndSpeciesGraph(
+    species_set: list[str],
+    predictedclass: list[str],
+    date_objs: list[datetime.datetime],
+    species_colors: dict[str, str],
+    jitter_strength: float = 0.1  # controls how much vertical spread you get
+):
+    hours = list(range(24))
+    species_list = sorted(species_set)
+    num_species = len(species_list)
+    fig_height = min(1.5 + (num_species * 0.4), 8)
+
+    plt.figure(figsize=(9, fig_height))
+
+    for species in species_list:
+        indices = [i for i, s in enumerate(predictedclass) if s == species]
+        if not indices:
+            continue
+
+        x = [date_objs[i].hour + date_objs[i].minute / 60.0 for i in indices]
+
+        # --- Apply jitter on y-axis ---
+        base_y = species_list.index(species)
+        y = [base_y + np.random.uniform(-jitter_strength, jitter_strength) for _ in indices]
+
+        plt.scatter(
+            x,
+            y,
+            label=species,
+            color=species_colors.get(species, "gray"),
+            alpha=0.8,
+            s=20
+        )
+
+    plt.xlabel("Hour of Day")
+    plt.ylabel("Species")
+    plt.title("Detections by Species and Time of Day")
+    plt.xlim(0, 24)
+    plt.xticks(hours, [f"{h:02d}:00" for h in hours], rotation=45)
+    plt.yticks(range(len(species_list)), species_list)
+    plt.grid(True, which='both', axis='both', color='gray', linestyle='-', linewidth=0.5, alpha=0.3)
+    plt.legend(fontsize=8, bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.tight_layout()
+
+    img_buffer = io.BytesIO()
+    plt.savefig(img_buffer, format='PNG', dpi=150)
+    plt.close()
+    img_buffer.seek(0)
+
+    img_width = 500
+    img_height = int(fig_height * 72)
+    return Image(img_buffer, width=img_width, height=img_height)
+
+
+def generateCircularObservationsGraph(
+    species_set: list[str],
+    predictedclass: list[str],
+    date_objs: list[datetime.datetime],
+    species_colors: dict[str, str],
+    jitter_strength: float = 0.05
+):
+    species_list = sorted(species_set)
+    num_species = len(species_list)
+    if num_species == 0:
+        raise ValueError("No species provided.")
+
+    # --- Radius configuration ---
+    inner_radius = 2.0
+    outer_radius = 6.0
+    fixed_interval = 0.75
+
+    max_rings_that_fit = int((outer_radius - inner_radius) / fixed_interval) + 1
+
+    if num_species <= max_rings_that_fit:
+        ring_positions = [outer_radius - i * fixed_interval for i in range(num_species)]
+    else:
+        ring_positions = np.linspace(outer_radius, inner_radius, num_species)
+
+    fig_size = 6
+    plt.figure(figsize=(fig_size, fig_size))
+    ax = plt.subplot(111, polar=True)
+    ax.set_theta_direction(-1)       # Clockwise
+    ax.set_theta_zero_location("N")  # 0h = top (north)
+
+    # --- Plot each species ---
+    for i, species in enumerate(species_list):
+        indices = [j for j, s in enumerate(predictedclass) if s == species]
+        if not indices:
+            continue
+
+        # Convert time → radians (24h = full circle)
+        hours = np.array([date_objs[j].hour + date_objs[j].minute / 60.0 for j in indices])
+        theta = (hours / 24.0) * 2 * np.pi
+
+        # Dynamic radius with jitter
+        base_r = ring_positions[i]
+        r = base_r + np.random.uniform(-jitter_strength, jitter_strength, size=len(theta))
+
+        # Light grey reference ring
+        circle_theta = np.linspace(0, 2 * np.pi, 360)
+        ax.plot(circle_theta, np.full_like(circle_theta, base_r),
+                color='lightgray', lw=0.6, alpha=0.6)
+
+        # Detections
+        ax.scatter(
+            theta,
+            r,
+            color=species_colors.get(species, "gray"),
+            label=species,
+            alpha=0.8,
+            s=30
+        )
+
+    # --- Axis setup ---
+    ax.set_rgrids(ring_positions, labels=species_list, angle=90, fontsize=8)
+    ax.set_rticks([])
+    ax.set_rlabel_position(0)
+
+    # Hour labels every 2 hours
+    hour_labels = [f"{h:02d}:00" for h in range(0, 24, 2)]
+    ax.set_xticks(np.linspace(0, 2 * np.pi, 12, endpoint=False))
+    ax.set_xticklabels(hour_labels)
+
+    # Add padding beyond the outermost ring
+    padding = fixed_interval / 2
+    ax.set_ylim(0, ring_positions[0] + padding)
+
+    ax.set_title("Detections by Time of Day", va='bottom')
+    ax.legend(bbox_to_anchor=(1.15, 1.05), fontsize=8)
+    plt.tight_layout()
+
+    # --- Export as ReportLab Image ---
+    img_buffer = io.BytesIO()
+    plt.savefig(img_buffer, format='PNG', dpi=150, bbox_inches='tight')
+    plt.close()
+    img_buffer.seek(0)
+
+    img_width = 500
+    img_height = int(fig_size * 72)
+    return Image(img_buffer, width=img_width, height=img_height)
+
 
 def getDatesChunksForObservationsByTimeGraphs(date_objs: list[datetime.datetime]):
     MAX_DATES_PER_GRAPH = 50
