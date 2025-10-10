@@ -5,10 +5,8 @@ import sys
 import os
 from reportlab.platypus import Image
 import numpy as np
-from scipy.stats import gaussian_kde
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-from time_utils.cluster_datetimes import cluster_datetimes
 
 matplotlib.use('agg')   
 import matplotlib.pyplot as plt
