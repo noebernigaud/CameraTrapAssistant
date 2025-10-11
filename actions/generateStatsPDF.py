@@ -113,6 +113,14 @@ def generateStatsPDF(folder, name, predictions_results, addresses, gps_coordinat
     if "vehicle" in species_set:
         species_set.remove("vehicle")
 
+    # If no species left, skip graph generation
+    if not species_set:
+        elements.append(Paragraph("No animal detections to plot.", styles['Normal']))
+        doc.build(elements)
+        logging.info(f"Skipping graphs generation as no animal detections found.")
+        logging.info(f"Succesfully generated {name} PDF.")
+        return
+
     # Chucking dates for graphs
     date_chunks = getDatesChunksForObservationsByTimeGraphs(date_objs)
 
