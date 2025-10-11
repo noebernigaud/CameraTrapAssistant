@@ -7,6 +7,7 @@ import datetime
 import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from time_utils.dateParser import parse_dates
 from time_utils.timeOffsetToTimezone import convert_to_timezone
 
 def _predict_videos_worker(filenames, threshold, timezone, LANG, log_queue, is_video):
@@ -52,12 +53,18 @@ def _predict_videos_worker(filenames, threshold, timezone, LANG, log_queue, is_v
         logging.info("Photo predictions completed")
 
     predictions, scores, _, counts = predictor.getPredictions()
-    dates: list[datetime.datetime] = predictor.getDates()
+    dates_raw = predictor.getDates()
+
+    # Parse any string-formatted dates (e.g., EXIF format "YYYY:MM:DD HH:MM:SS") into datetime objects
+    parsed_dates: list[datetime.datetime | None] = parse_dates(dates_raw)
 
     # Assume dates are in UTC, convert them to timezone_to_use
     logging.info(f"Using timezone: {timezone}")
-    logging.info(f"Exemple date before timezone adjustment: {dates[-1] if dates else 'No dates available'}")
-    dates = [convert_to_timezone(d, timezone) for d in dates]
+    logging.info(f"Exemple date before timezone adjustment: {parsed_dates[-1] if parsed_dates else 'No dates available'}")
+    dates: list[datetime.datetime | None] = [
+        convert_to_timezone(d, timezone) if isinstance(d, datetime.datetime) else None
+        for d in parsed_dates
+    ]
     logging.info(f"Exemple date after timezone adjustment: {dates[-1] if dates else 'No dates available'}")
 
     number_no_date = dates.count(None)

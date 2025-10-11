@@ -8,3 +8,5 @@ testdata/sequence
 dist
 build
 deepfauneGUI.spec
+deepfaune_gui.ini
+commands/.cache.sqlite
