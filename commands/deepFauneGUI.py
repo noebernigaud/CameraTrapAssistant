@@ -12,7 +12,7 @@ from objects.options_config import OptionsConfig
 from actions.run import runWithArgs
 from GUI_utils.gui_logging import TkinterLogHandler
 from GUI_utils.gui_config import load_checkbox_state, save_checkbox_state
-from GUI_utils.gui_tooltip import CheckWithTooltip, LabelWithTooltip, ToolTip
+from GUI_utils.gui_tooltip import CheckWithTooltip, LabelWithTooltip
 from time_utils.timeOffsetToTimezone import convert_to_timezone, time_offset_to_timezone
 
 

@@ -1,3 +1,4 @@
+import logging
 import matplotlib
 import datetime
 import io
@@ -6,12 +7,21 @@ import os
 from reportlab.platypus import Image
 import numpy as np
 
+from meteoAPI.getMeteoData import MeteoData
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 matplotlib.use('agg')   
 import matplotlib.pyplot as plt
 
-def generateObservationsByTimeAndDaysGraph(species_set: list[str], predictedclass: list[str], date_objs: list[datetime.datetime], species_colors: dict[str, str], chunk_dates_list: list[datetime.date]):
+def generateObservationsByTimeAndDaysGraph(
+    species_set: list[str],
+    predictedclass: list[str],
+    date_objs: list[datetime.datetime],
+    species_colors: dict[str, str],
+    chunk_dates_list: list[datetime.date],
+    meteo_data: MeteoData  # MeteoData with .days list having date, weather_code, sunrise, sunset
+):
     hours = list(range(24))
     chunk_dates_list = sorted(chunk_dates_list, reverse=True)
     num_dates = len(chunk_dates_list)
@@ -33,6 +43,83 @@ def generateObservationsByTimeAndDaysGraph(species_set: list[str], predictedclas
     plt.yticks(chunk_dates_list, [d.strftime("%m-%d") for d in chunk_dates_list])
     plt.ylim(chunk_dates_list[0] + (chunk_dates_list[-1] - chunk_dates_list[0]).__class__(1),
                 chunk_dates_list[-1] - (chunk_dates_list[-1] - chunk_dates_list[0]).__class__(1))
+    # --- Meteo overlay aligned with y-axis dates ---
+    # Build a date -> meteo day map if provided
+    def _weather_color(code: int) -> str:
+        # Simplified mapping based on WMO weather codes
+        if code == 0:
+            return '#f9d71c'  # clear
+        if code in (1, 2, 3):
+            return '#9ecae1'  # clouds
+        if code in (45, 48):
+            return '#c7c7c7'  # fog
+        if 51 <= code <= 57:
+            return '#74add1'  # drizzle
+        if 61 <= code <= 67:
+            return '#2c7fb8'  # rain
+        if 71 <= code <= 77:
+            return '#74c476'  # snow
+        if 80 <= code <= 82:
+            return '#2c7fb8'  # rain showers
+        if 85 <= code <= 86:
+            return '#74c476'  # snow showers
+        if code in (95, 96, 99):
+            return '#dd1c77'  # thunder
+        return '#999999'
+
+    sunrise_label_done = False
+    sunset_label_done = False
+    weather_label_done = False
+
+    if meteo_data and getattr(meteo_data, 'days', None):
+        # Create a mapping from date -> day
+        try:
+            day_map = {}
+            for d in meteo_data.days:
+                # d.date is expected to be a pandas Timestamp; convert to date
+                try:
+                    dt = d.date.date() if hasattr(d.date, 'date') else d.date
+                except Exception:
+                    dt = d.date
+                day_map[dt] = d
+
+            for y_date in chunk_dates_list:
+                day = day_map.get(y_date)
+                if not day:
+                    continue
+                # sunrise/sunset are epoch seconds; convert to hour-of-day
+                try:
+                    sr = datetime.datetime.fromtimestamp(int(day.sunrise))
+                    ss = datetime.datetime.fromtimestamp(int(day.sunset))
+                    x_sr = sr.hour + sr.minute/60.0
+                    x_ss = ss.hour + ss.minute/60.0
+                    plt.scatter(
+                        [x_sr], [y_date], marker='v', color='orange', s=25, alpha=0.8,
+                        label=None if sunrise_label_done else 'Sunrise'
+                    )
+                    sunrise_label_done = True
+                    plt.scatter(
+                        [x_ss], [y_date], marker='^', color='red', s=25, alpha=0.8,
+                        label=None if sunset_label_done else 'Sunset'
+                    )
+                    sunset_label_done = True
+                except Exception:
+                    pass
+
+                # Weather code marker at the far right
+                try:
+                    wx_color = _weather_color(int(day.weather_code))
+                    x_wx = 23.8
+                    plt.scatter(
+                        [x_wx], [y_date], marker='s', s=40, color=wx_color, edgecolors='k', linewidths=0.2,
+                        label=None if weather_label_done else 'Weather code'
+                    )
+                    weather_label_done = True
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
     plt.grid(True, which='both', axis='both', color='gray', linestyle='-', linewidth=0.5, alpha=0.3)
     plt.legend(fontsize=8)
     plt.tight_layout()

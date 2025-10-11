@@ -53,7 +53,7 @@ def runWithArgs(folder, options_config: OptionsConfig, lat=None, lon=None, csv_p
         rename_videos_with_date_and_info(filenames, prediction_results["predictions"], prediction_results["dates"])
 
     if options_config.generate_stats:
-        generateStatsPDF(folder, "stats", prediction_results, addresses, csv_path)
+        generateStatsPDF(folder, "stats", prediction_results, addresses, gps_coordinates[0], csv_path)
 
     if options_config.generate_data or csv_path:
         generatePredictorResultsAsCSV(folder, filenames, prediction_results, gps_coordinates, [getCity(address) for address in addresses], options_config.generate_data, csv_path)

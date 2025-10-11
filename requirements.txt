@@ -12,3 +12,6 @@ tkintermapview
 geopy
 reportlab
 tzlocal
+openmeteo-requests
+requests-cache
+retry-requests

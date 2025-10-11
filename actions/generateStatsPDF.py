@@ -17,9 +17,10 @@ from actions.stats_utils.data_extractions.retrieve_CSV_data import retrieveDataF
 from actions.stats_utils.data_extractions.prediction_results_filter import get_predictions_results_with_valid_dates
 from actions.stats_utils.graphics_data_generation.generate_animals_table_data import buildAnimalsTableData
 from actions.stats_utils.graphics_data_generation.generate_observations_by_time_graph import generateCircularObservationsGraph, generateObservationsByTimeAndDaysGraph, getDatesChunksForObservationsByTimeGraphs
+from meteoAPI import getMeteoData
 
 
-def generateStatsPDF(folder, name, predictions_results, addresses, csv_path=None):
+def generateStatsPDF(folder, name, predictions_results, addresses, gps_coordinates, csv_path=None):
     ### Extract data ###
     logging.info("Extracting data for stats PDF generation...")
 
@@ -30,6 +31,7 @@ def generateStatsPDF(folder, name, predictions_results, addresses, csv_path=None
     date_objs: list[datetime.datetime] = predictions_results["dates"]
 
     species_set = set(predictedclass)
+
 
     # Get existing CSV data if provided
     existing_csv_predictions = None
@@ -52,6 +54,7 @@ def generateStatsPDF(folder, name, predictions_results, addresses, csv_path=None
                     "scores": combined_predicted_score
                 },
                 addresses,
+                gps_coordinates,
                 csv_path=None  # Avoid infinite recursion
             )
 
@@ -122,7 +125,29 @@ def generateStatsPDF(folder, name, predictions_results, addresses, csv_path=None
 
     if date_chunks:
         for _, chunk_dates_list in enumerate(date_chunks):
-            observations_by_time_and_day_graph = generateObservationsByTimeAndDaysGraph(species_set, predictedclass, date_objs, species_colors, chunk_dates_list)
+            # Meteo data (requires lat, lon, start_date, end_date)
+            try:
+                lat, lon = gps_coordinates
+                if date_objs:
+                    # Use a sorted copy of date_objs to determine first/last dates without mutating the original list
+                    sorted_date_objs = sorted(chunk_dates_list)
+                    first_date = sorted_date_objs[0]
+                    last_date = sorted_date_objs[-1]
+                    meteo_data = getMeteoData(lat, lon, first_date, last_date)
+                else:
+                    logging.info("No dates available, skipping meteo data retrieval.")
+                    meteo_data = None
+            except Exception:
+                logging.info("Failed to retrieve meteo data.", exc_info=True)
+                meteo_data = None
+            observations_by_time_and_day_graph = generateObservationsByTimeAndDaysGraph(
+                species_set,
+                predictedclass,
+                date_objs,
+                species_colors,
+                chunk_dates_list,
+                meteo_data
+            )
             elements.append(observations_by_time_and_day_graph)
             elements.append(Spacer(1, 24))
     else:
