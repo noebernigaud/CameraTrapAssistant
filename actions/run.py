@@ -37,6 +37,9 @@ def runWithArgs(folder, options_config: OptionsConfig, lat=None, lon=None, csv_p
     )
     logging.info(f"Found {len(photo_filenames)} image files in folder {folder}")
     filenames = video_filenames + photo_filenames
+
+    if (not filenames):
+        raise Exception(f"No video or image files found in folder {folder}")
     
     if options_config.add_gps and lat is not None and lon is not None:
         gps_coordinates, addresses = add_and_extract_gps(filenames, lat, lon, options_config.use_gps_only_for_data)
