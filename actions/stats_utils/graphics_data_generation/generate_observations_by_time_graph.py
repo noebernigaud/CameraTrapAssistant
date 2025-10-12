@@ -94,12 +94,12 @@ def generateObservationsByTimeAndDaysGraph(
                     x_sr = sr.hour + sr.minute/60.0
                     x_ss = ss.hour + ss.minute/60.0
                     plt.scatter(
-                        [x_sr], [y_date], marker='v', color='orange', s=25, alpha=0.8,
+                        [x_sr], [y_date], marker='^', color='orange', s=20, alpha=0.3, linewidths=0,
                         label=None if sunrise_label_done else 'Sunrise'
                     )
                     sunrise_label_done = True
                     plt.scatter(
-                        [x_ss], [y_date], marker='^', color='red', s=25, alpha=0.8,
+                        [x_ss], [y_date], marker='v', color='red', s=20, alpha=0.3, linewidths=0,
                         label=None if sunset_label_done else 'Sunset'
                     )
                     sunset_label_done = True
