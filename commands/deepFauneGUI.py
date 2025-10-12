@@ -342,7 +342,7 @@ def main():
     def open_support(_evt=None):
         webbrowser.open("https://ko-fi.com/bernigaudnoe", new=1)
     def open_github(_evt=None):
-        webbrowser.open("https://github.com/noebernigaud/CameraTrapSorter", new=1)
+        webbrowser.open("https://github.com/noebernigaud/CameraTrapAssistant", new=1)
 
     link_normal = "#1a73e8"   # Google blue
     link_hover = "#0b5ed7"    # darker on hover

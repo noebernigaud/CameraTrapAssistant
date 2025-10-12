@@ -1,4 +1,3 @@
-import logging
 import matplotlib
 import datetime
 import io
