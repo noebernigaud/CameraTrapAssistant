@@ -5,6 +5,8 @@ import sys
 import threading
 import logging
 from tkinter import ttk
+import webbrowser
+from PIL import Image, ImageTk
 
 # Import project utilities
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -101,10 +103,22 @@ def main():
     folder_frame = tk.Frame(root)
     try:
         from pathlib import Path
-        folder_icon = tk.PhotoImage(file=str(Path(__file__).parent.parent / "icons" / "folder.png"))
-        run_icon = tk.PhotoImage(file=str(Path(__file__).parent.parent / "icons" / "run.png"))
-        folder_icon = folder_icon.subsample(max(folder_icon.width() // 20, 1), max(folder_icon.height() // 20, 1))
-        run_icon = run_icon.subsample(max(run_icon.width() // 20, 1), max(run_icon.height() // 20, 1))
+        icons_dir = Path(__file__).parent.parent / "icons"
+
+        def load_icon(filename: str, target_height: int) -> tk.PhotoImage | None:
+            try:
+                img = Image.open(str(icons_dir / filename)).convert("RGBA")
+                w, h = img.size
+                if h > 0 and h != target_height:
+                    new_w = max(1, round(w * (target_height / h)))
+                    img = img.resize((new_w, target_height), Image.LANCZOS)
+                return ImageTk.PhotoImage(img)
+            except Exception:
+                return None
+
+        # Target ~18px tall to align nicely with buttons
+        folder_icon = load_icon("folder.png", 18)
+        run_icon = load_icon("run.png", 18)
     except Exception:
         folder_icon = None
         run_icon = None
@@ -306,6 +320,76 @@ def main():
     # Log text area
     log_text = tk.Text(root, height=10, width=60, state='disabled')
     log_text.pack(padx=10, pady=(0, 10), fill='both', expand=True)
+
+    # Footer with support link (looks like a hyperlink)
+    footer_frame = tk.Frame(root)
+    def open_support(_evt=None):
+        webbrowser.open("https://ko-fi.com/bernigaudnoe", new=1)
+    def open_github(_evt=None):
+        webbrowser.open("https://github.com/noebernigaud/CameraTrapSorter", new=1)
+
+    link_normal = "#1a73e8"   # Google blue
+    link_hover = "#0b5ed7"    # darker on hover
+
+    # Try to load footer icons and scale them with high quality (PIL)
+    kofi_icon = None
+    github_icon = None
+    try:
+        from pathlib import Path
+        icons_dir = Path(__file__).parent.parent / "icons"
+
+        def load_icon(filename: str, target_height: int) -> tk.PhotoImage | None:
+            try:
+                img = Image.open(str(icons_dir / filename)).convert("RGBA")
+                w, h = img.size
+                if h > 0 and h != target_height:
+                    new_w = max(1, round(w * (target_height / h)))
+                    img = img.resize((new_w, target_height), Image.LANCZOS)
+                return ImageTk.PhotoImage(img)
+            except Exception:
+                return None
+
+        # Footer icons slightly larger for readability
+        github_icon = load_icon("github-mark.png", 18)
+        kofi_icon = load_icon("kofi_symbol.png", 18)
+    except Exception:
+        kofi_icon = None
+        github_icon = None
+
+    support_link = tk.Label(
+        footer_frame,
+        text="Support the App",
+        fg=link_normal,
+        cursor="hand2",
+        font=("Arial", 10, "underline"),
+        image=kofi_icon,
+        compound=tk.LEFT,
+        padx=4
+    )
+    # Keep a reference to avoid image being garbage-collected
+    support_link.image = kofi_icon
+    support_link.bind("<Button-1>", open_support)
+    support_link.bind("<Enter>", lambda e: support_link.config(fg=link_hover))
+    support_link.bind("<Leave>", lambda e: support_link.config(fg=link_normal))
+    support_link.pack(side=tk.RIGHT, padx=10, pady=(0, 10))
+    footer_frame.pack(side=tk.BOTTOM, fill="x")
+
+
+    github_link = tk.Label(
+        footer_frame,
+        text="GitHub",
+        fg=link_normal,
+        cursor="hand2",
+        font=("Arial", 10, "underline"),
+        image=github_icon,
+        compound=tk.LEFT,
+        padx=4
+    )
+    github_link.image = github_icon  # Keep a reference to avoid image being garbage-collected
+    github_link.bind("<Button-1>", open_github)
+    github_link.bind("<Enter>", lambda e: github_link.config(fg=link_hover))
+    github_link.bind("<Leave>", lambda e: github_link.config(fg=link_normal))
+    github_link.pack(side=tk.RIGHT, padx=10, pady=(0, 10))
 
     # Attach the logging handler
     handler = TkinterLogHandler(log_text)
