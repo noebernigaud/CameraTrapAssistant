@@ -72,7 +72,8 @@ def show_support_nudge(parent: tk.Tk) -> None:
 
     msg = tk.Label(
         top,
-        text="If you enjoy the application, feel free to support it with a donation !",
+        text="Love using Camera Trap Assistant?" \
+        "\nYour support helps keep it free and helps fund new features for wildlife enthusiasts everywhere!",
         wraplength=380,
         justify="center",
         font=("Arial", 11)
@@ -85,13 +86,7 @@ def show_support_nudge(parent: tk.Tk) -> None:
     def close():
         top.destroy()
 
-    def go_support():
-        try:
-            webbrowser.open("https://ko-fi.com/bernigaudnoe", new=1)
-        finally:
-            top.destroy()
-
-    later = tk.Button(btns, text="Maybe next time", command=close, width=16)
+    later = tk.Button(btns, text="Maybe Later", command=close, width=16)
     later.pack(side=tk.LEFT, padx=6)
     # Hyperlink-styled support control with icon
     support_lbl = create_support_link_label(btns)

@@ -111,7 +111,7 @@ def main():
     global data_var, stats_var, move_empty_var, move_undefined_var, rename_var, get_gps_each_var, use_gps_only_for_data_var, threshold_var, combine_with_data_var, time_offset_var
     global gps_var, coord_var
     root = tk.Tk()
-    root.title("DeepFaune custom script")
+    root.title("Camera Trap Assistant")
     root.minsize(240, 120)
     root.geometry("1000x600")
 
