@@ -98,6 +98,7 @@ def main():
     root = tk.Tk()
     root.title("DeepFaune custom script")
     root.minsize(240, 120)
+    root.geometry("1000x600")
 
     # Folder selection and launch row
     folder_frame = tk.Frame(root)
