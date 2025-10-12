@@ -14,8 +14,7 @@ DeepFaune/
 │   │   ├── stats/                 # Statistics generation
 │   │   └── run.py                 # Main processing logic
 │   ├── gui/                       # GUI components
-│   │   ├── main_window.py         # Modern GUI
-│   │   ├── legacy_gui.py          # Legacy GUI
+│   │   ├── main_window.py         # Main GUI interface
 │   │   └── utils/                 # GUI utilities
 │   ├── models/                    # AI models and weights
 │   │   └── weights/               # Model weight files
@@ -64,14 +63,8 @@ pip install -r requirements/build.txt
 #### Running the Application
 
 ```bash
-# Modern GUI (default)
+# Run the application (GUI only)
 python src/main.py
-
-# Explicitly launch modern GUI
-python src/main.py --gui
-
-# Legacy GUI
-python src/main.py --legacy-gui
 ```
 
 #### Building Executable
