@@ -10,10 +10,11 @@ from PIL import Image, ImageTk
 
 # Import project utilities
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from GUI_utils.gui_donation import show_support_nudge, create_support_link_label
 from objects.options_config import OptionsConfig
 from actions.run import runWithArgs
 from GUI_utils.gui_logging import TkinterLogHandler
-from GUI_utils.gui_config import load_checkbox_state, save_checkbox_state
+from GUI_utils.gui_config import load_checkbox_state, save_checkbox_state, increment_run_count
 from GUI_utils.gui_tooltip import CheckWithTooltip, LabelWithTooltip
 from time_utils.timeOffsetToTimezone import convert_to_timezone, time_offset_to_timezone
 
@@ -41,6 +42,7 @@ def select_folder():
         run_btn.config(state=tk.NORMAL)
 
 def run():
+    # Increment run count and disable button during processing
     run_btn.config(state=tk.DISABLED)
     log_text.config(state='normal')
     log_text.delete(1.0, tk.END)
@@ -84,6 +86,19 @@ def run():
             messagebox.showerror("Error", "Please select coordinates on the map before adding GPS data.")
             run_btn.config(state=tk.NORMAL)
             return
+    try:
+        new_count = increment_run_count()
+        logging.info(f"Run button clicked {new_count} time(s)")
+        # Every 5 runs, nudge support
+        if new_count % 5 == 0:
+            try:
+                show_support_nudge(root)
+            except Exception as e:
+                logging.info(f"Support nudge dialog failed: {e}")
+        else:
+            logging.info("No support nudge this time.")
+    except Exception as e:
+        logging.warning(f"Could not update run_count: {e}")
     threading.Thread(target=run_in_thread, args=(folder, options_config, lat, lon, csv_path), daemon=True).start()
 
 
@@ -357,21 +372,7 @@ def main():
         kofi_icon = None
         github_icon = None
 
-    support_link = tk.Label(
-        footer_frame,
-        text="Support the App",
-        fg=link_normal,
-        cursor="hand2",
-        font=("Arial", 10, "underline"),
-        image=kofi_icon,
-        compound=tk.LEFT,
-        padx=4
-    )
-    # Keep a reference to avoid image being garbage-collected
-    support_link.image = kofi_icon
-    support_link.bind("<Button-1>", open_support)
-    support_link.bind("<Enter>", lambda e: support_link.config(fg=link_hover))
-    support_link.bind("<Leave>", lambda e: support_link.config(fg=link_normal))
+    support_link = create_support_link_label(footer_frame)
     support_link.pack(side=tk.RIGHT, padx=10, pady=(0, 10))
     footer_frame.pack(side=tk.BOTTOM, fill="x")
 

@@ -109,3 +109,37 @@ def save_map_state(lat, lon, zoom):
     logging.info(f"Save map state: lat={lat}, lon={lon}, zoom={zoom}")
     with open(config_file, 'w') as configfile:
         config.write(configfile)
+
+def get_run_count() -> int:
+    """
+    Returns the number of times the user clicked the Run button, stored in the [meta] section as 'run_count'.
+    Defaults to 0 if not present.
+    """
+    config = configparser.ConfigParser()
+    config_file = get_config_file_path()
+    if os.path.exists(config_file):
+        config.read(config_file)
+        return config.getint('meta', 'run_count', fallback=0)
+    return 0
+
+def increment_run_count() -> int:
+    """
+    Increments the 'run_count' value in the [meta] section and persists it to the INI file.
+    Returns the updated count.
+    """
+    config = configparser.ConfigParser()
+    config_file = get_config_file_path()
+    if os.path.exists(config_file):
+        config.read(config_file)
+    if 'meta' not in config:
+        config['meta'] = {}
+    current = 0
+    try:
+        current = int(config['meta'].get('run_count', '0'))
+    except Exception:
+        current = 0
+    current += 1
+    config['meta']['run_count'] = str(current)
+    with open(config_file, 'w') as configfile:
+        config.write(configfile)
+    return current
