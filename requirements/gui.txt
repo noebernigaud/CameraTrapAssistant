@@ -1,3 +1,0 @@
-# GUI-specific requirements
--r base.txt
-tkintermapview>=1.21

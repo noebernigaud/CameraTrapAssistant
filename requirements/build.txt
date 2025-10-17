@@ -1,4 +1,0 @@
-# Build and packaging requirements
--r gui.txt
-pyinstaller>=5.0.0
-auto-py-to-exe>=2.20.0
