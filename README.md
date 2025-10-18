@@ -1,111 +1,74 @@
-# DeepFaune - Wildlife Detection System
+# CameraTrap Assistant - Wildlife Detection System
 
 A comprehensive wildlife detection and classification system for camera trap images.
+
+## Quick Start
+
+**Windows Users**: Simply run `CameraTrapAssistant_windows.bat` - it will automatically:
+- Check for updates from GitHub
+- Install Python if needed
+- Install dependencies
+- Launch the application
 
 ## Project Structure
 
 ```
-DeepFaune/
-├── src/                           # Main source code
-│   ├── main.py                    # Application entry point
-│   ├── core/                      # Core business logic
-│   │   ├── prediction/            # AI prediction modules
-│   │   ├── file_operations/       # File handling
-│   │   ├── stats/                 # Statistics generation
-│   │   └── run.py                 # Main processing logic
-│   ├── gui/                       # GUI components
-│   │   ├── main_window.py         # Main GUI interface
-│   │   └── utils/                 # GUI utilities
-│   ├── models/                    # AI models and weights
-│   │   └── weights/               # Model weight files
-│   ├── utils/                     # Utility modules
-│   │   ├── resource_manager.py    # Resource path management
-│   │   └── time_utils/            # Time/date utilities
-│   └── config/                    # Configuration management
-├── resources/                     # Static resources
-│   ├── icons/                     # Application icons
-│   ├── tools/                     # External tools (exiftool)
-│   └── config/                    # Configuration files
-├── build/                         # Build artifacts
-│   ├── spec_files/                # PyInstaller spec files
-│   └── dist/                      # Output executables
-├── scripts/                       # Build and utility scripts
-│   └── build_exe.py               # Executable build script
-├── requirements/                  # Split requirements
-│   ├── base.txt                   # Core dependencies
-│   ├── gui.txt                    # GUI dependencies
-│   └── build.txt                  # Build dependencies
-├── pyproject.toml                 # Modern Python project config
-└── README.md                      # This file
+software/
+├── CameraTrapAssistant_windows.bat # Windows installer/launcher
+├── installer/                      # Installer-generated files
+│   ├── .installed_X.X.X           # Installation markers
+│   └── CameraTrapAssistant_installer.log # Installation log
+└── CameraTrapAssistant/
+    ├── src/                        # Main source code
+    │   ├── main.py                 # Application entry point
+    │   ├── core/                   # Core business logic
+    │   ├── gui/                    # GUI components
+    │   ├── models/                 # AI models and weights
+    │   ├── utils/                  # Utility modules
+    │   └── config/                 # Configuration management
+    ├── resources/                  # Static resources
+    │   ├── icons/                  # Application icons
+    │   ├── tools/                  # External tools (exiftool)
+    │   └── config/                 # Configuration files
+    ├── requirements.txt            # Python dependencies
+    └── version.json                # Version information
 ```
 
-## Installation
+## Installation & Usage
 
-### Development Setup
+### Windows (Recommended)
+Run `CameraTrapAssistant_windows.bat` - handles everything automatically.
 
-1. Clone the repository:
+### Manual Installation
 ```bash
 git clone https://github.com/noebernigaud/CameraTrapAssistant.git
-cd CameraTrapAssistant/software
-```
-
-2. Install dependencies:
-```bash
-# For GUI version
-pip install -r requirements/gui.txt
-
-# For building executables
-pip install -r requirements/build.txt
-```
-
-### Usage
-
-#### Running the Application
-
-```bash
-# Run the application (GUI only)
+cd CameraTrapAssistant/software/CameraTrapAssistant
+pip install -r requirements.txt
 python src/main.py
 ```
 
-#### Building Executable
+## Auto-Update System
 
-```bash
-# Run the build script
-python scripts/build_exe.py
+The Windows installer automatically:
+- Checks GitHub releases for newer versions
+- Downloads and installs updates
+- Backs up current installation
+- Rolls back on failure
+
+## Version Management
+
+Update version in `CameraTrapAssistant/version.json`:
+```json
+{
+    "version": "1.0.1",
+    "build_date": "2025-10-18",
+    "min_python_version": "3.8",
+    "description": "CameraTrap Assistant - Wildlife camera trap image analysis tool",
+    "github_repo": "noebernigaud/CameraTrapAssistant"
+}
 ```
 
-The executable will be created in `build/dist/DeepFaune.exe`.
-
-## Key Benefits of New Structure
-
-1. **Clean Module Structure**: All imports are now predictable and organized
-2. **Resource Management**: Handles paths correctly in both development and executable
-3. **Single Entry Point**: `src/main.py` provides unified access to all modes
-4. **Executable Ready**: Properly configured for PyInstaller packaging
-5. **Modern Python**: Uses `pyproject.toml` and modern packaging standards
-6. **Modular Design**: Easy to maintain, test, and extend
-
-## Development
-
-### Project Configuration
-
-The project uses modern Python packaging with `pyproject.toml`:
-- Metadata and dependencies managed in one place
-- Supports optional dependencies for different features
-- Ready for PyPI distribution if needed
-
-### Resource Management
-
-The `utils/resource_manager.py` module handles file paths that work both in:
-- Development environment (direct file access)
-- PyInstaller executable (bundled resources)
-
-### Build Process
-
-1. PyInstaller reads `build/spec_files/main.spec`
-2. Bundles source code, resources, and dependencies
-3. Creates single executable in `build/dist/`
-4. Includes all necessary icons, tools, and model weights
+Create GitHub release with tag `v1.0.1` - the installer will detect it automatically.
 
 ## License
 
