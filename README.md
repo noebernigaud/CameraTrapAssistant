@@ -4,40 +4,47 @@ A comprehensive wildlife detection and classification system for camera trap ima
 
 ## Quick Start
 
-**Windows Users**: Simply run `CameraTrapAssistant_windows.bat` - it will automatically:
-- Check for updates from GitHub
-- Install Python if needed
-- Install dependencies
-- Launch the application
+**Windows Users**: 
+1. First time: Run `scripts\updater.bat` to download the latest version
+2. Then run: `CameraTrapAssistant_windows_launcher.bat` for automatic setup and launch
+3. Subsequent runs: Just use `CameraTrapAssistant_windows_launcher.bat`
+
+**Manual Update**: Run `scripts\updater.bat` anytime to check for and install updates
 
 ## Project Structure
 
 ```
 software/
-├── CameraTrapAssistant_windows.bat # Windows installer/launcher
-├── installer/                      # Installer-generated files
-│   ├── .installed_X.X.X           # Installation markers
-│   └── CameraTrapAssistant_installer.log # Installation log
-└── CameraTrapAssistant/
-    ├── src/                        # Main source code
-    │   ├── main.py                 # Application entry point
-    │   ├── core/                   # Core business logic
-    │   ├── gui/                    # GUI components
-    │   ├── models/                 # AI models and weights
-    │   ├── utils/                  # Utility modules
-    │   └── config/                 # Configuration management
-    ├── resources/                  # Static resources
-    │   ├── icons/                  # Application icons
-    │   ├── tools/                  # External tools (exiftool)
-    │   └── config/                 # Configuration files
-    ├── requirements.txt            # Python dependencies
-    └── version.json                # Version information
+├── CameraTrapAssistant_windows_launcher.bat # 🆕 Main Windows launcher
+├── scripts/                                 # 🆕 Modular scripts
+│   ├── installer.bat                       # Python & dependencies installer
+│   ├── launcher.bat                        # Application launcher
+│   ├── updater.bat                         # GitHub update checker
+│   └── installer_files_utils/              # Installer-generated files
+│       ├── .installed                      # Installation marker
+│       └── CameraTrapAssistant_installer.log # Installation log
+└── CameraTrapAssistant/                     # Main application
+    ├── src/                                 # Main source code
+    │   ├── main.py                         # Application entry point
+    │   ├── core/                           # Core business logic
+    │   ├── gui/                            # GUI components
+    │   ├── models/                         # AI models and weights
+    │   ├── utils/                          # Utility modules
+    │   └── config/                         # Configuration management
+    ├── resources/                          # Static resources
+    │   ├── icons/                          # Application icons
+    │   ├── tools/                          # External tools (exiftool)
+    │   └── config/                         # Configuration files
+    ├── requirements.txt                    # Python dependencies
+    └── version.json                        # Version information
 ```
 
 ## Installation & Usage
 
 ### Windows (Recommended)
-Run `CameraTrapAssistant_windows.bat` - handles everything automatically.
+1. **First time**: Run `scripts\updater.bat` to download the application
+2. **Launch**: Run `CameraTrapAssistant_windows_launcher.bat` for automatic setup and launch
+3. **Updates**: Run `scripts\updater.bat` anytime to check for updates
 
 ### Manual Installation
 ```bash
@@ -49,11 +56,18 @@ python src/main.py
 
 ## Auto-Update System
 
-The Windows installer automatically:
-- Checks GitHub releases for newer versions
-- Downloads and installs updates
-- Backs up current installation
-- Rolls back on failure
+The modular script system provides:
+- **`scripts\updater.bat`**: Checks GitHub releases and downloads updates
+- **`scripts\installer.bat`**: Installs Python, pip, and dependencies
+- **`scripts\launcher.bat`**: Launches the application
+- **Main launcher**: Orchestrates the process automatically
+
+### Script Details
+
+- **Updater**: Downloads from GitHub, backs up current version, installs updates
+- **Installer**: Handles Python installation and dependency management  
+- **Launcher**: Simple application launcher with version display
+- **Main Launcher**: Checks installation status and runs appropriate scripts
 
 ## Version Management
 
