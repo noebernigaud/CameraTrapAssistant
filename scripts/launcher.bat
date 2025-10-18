@@ -39,9 +39,11 @@ echo.
 echo Launching CameraTrap Assistant...
 echo Launching application v%CURRENT_VERSION% - %date% %time% >> "%LOG_FILE%"
 
-:: Launch the application
-python "%MAIN_PY%"
+:: Launch the application (windowless for GUI apps)
+start "" pythonw "%MAIN_PY%"
 
-echo.
-echo Application closed.
-echo Application closed - %date% %time% >> "%LOG_FILE%"
+:: Log the launch and exit immediately
+echo Application launched - %date% %time% >> "%LOG_FILE%"
+
+:: Exit without pause - terminal will close automatically
+exit /b

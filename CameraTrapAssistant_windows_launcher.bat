@@ -47,9 +47,5 @@ echo Installation found. Launching application...
 echo.
 call "%SCRIPTS_DIR%\launcher.bat"
 
-echo.
-echo ======================================================
-echo   %APP_NAME% session ended.
-echo ======================================================
-echo.
-pause
+:: Launcher will exit automatically after starting the app
+:: No need to pause - terminal will close
