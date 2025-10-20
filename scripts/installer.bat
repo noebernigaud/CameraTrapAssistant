@@ -34,7 +34,7 @@ if errorlevel 1 (
     echo Installing Python... >> "%LOG_FILE%"
     set "PYTHON_INSTALLER=%TEMP%\python-installer.exe"
     powershell -Command "Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.12.6/python-3.12.6-amd64.exe' -OutFile '%PYTHON_INSTALLER%'"
-    start /wait "" "%PYTHON_INSTALLER%" /quiet InstallAllUsers=1 PrependPath=1 Include_pip=1
+    start /wait "" "%PYTHON_INSTALLER%" /quiet InstallAllUsers=0 PrependPath=1 Include_pip=1
     echo Python installed successfully.
     echo Python installation completed >> "%LOG_FILE%"
     echo.
